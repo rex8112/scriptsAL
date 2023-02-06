@@ -1,12 +1,17 @@
 [
     {
-        "name": "MyChar1",
-        "ctype": "merchant",
-        "id": "0123456789"
+        "name": "Deziest",
+        "ctype": "priest",
+        "id": "5843247951249408"
     },
     {
-        "name": "MyChar2",
-        "ctype": "warrior",
-        "id": "9876543210"
+        "name": "Dezanger",
+        "ctype": "ranger",
+        "id": "4567051636572160"
+    },
+    {
+        "name": "Dezara",
+        "ctype": "mage",
+        "id": "5791015176241152"
     }
 ]
