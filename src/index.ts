@@ -3,41 +3,40 @@
 // If you don't know how to code, don't worry, It's easy.
 // Just set attack_mode to true and ENGAGE!
 
-const attack_mode = false;
+import { smart_use_hp_or_mp, replenish_potions } from "./utils";
 
-setInterval(() => {
-    use_hp_or_mp();
-    loot();
+var attack_mode=true;
+var mon_type = "bee";
 
-    if (!attack_mode || character.rip || is_moving(character)) {
-        return;
-    }
+setInterval(async function(){
+  smart_use_hp_or_mp();
+  loot();
+  replenish_potions();
 
-    let target = get_targeted_monster();
-    if (!target) {
-        target = get_nearest_monster({ min_xp: 100, max_att: 120 });
+  if(!attack_mode || character.rip || is_moving(character)) return;
 
-        if (target) {
-            change_target(target);
-        } else {
-            set_message("No Monsters");
-            return;
-        }
-    }
-
-    if (!is_in_range(target)) {
-        // Walk half the distance
-        move(
-            character.x + (target.x - character.x) / 2,
-            character.y + (target.y - character.y) / 2,
-        );
-    } else if (can_attack(target)) {
-        set_message("Attacking");
+  const target = get_nearest_monster({type: mon_type});
+  
+  if (target) {
+    change_target(target);
+    if (can_attack(target)) {
         attack(target);
+    } else {
+      const dist = simple_distance(target,character);
+      if(!is_moving(character) 
+          && dist > character.range - 10) {
+        if(can_move_to(target.real_x,target.real_y)) {
+          move((target.real_x + character.real_x) / 2, (target.real_y + character.real_y) / 2);
+        } else {
+          smart_move(target);
+        }
+      }
     }
-}, 1000 / 4); // Loops every 1/4 seconds.
+  } else if(!is_moving(character)) {
+    smart_move(<SmartMoveToDestination>mon_type);
+  }
+
+},1000/4); // Loops every 1/4 seconds.
 
 // Learn Javascript: https://www.codecademy.com/learn/introduction-to-javascript
 // Write your own CODE: https://github.com/kaansoral/adventureland
-// NOTE: If the tab isn't focused, browsers slow down the game
-// NOTE: Use the performance_trick() function as a workaround
