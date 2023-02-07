@@ -33,6 +33,7 @@ async function restock_farmers() {
             } else {
                 await smart_move(position);
             }
+            sleep(150);
         }
         send_cm(char.name, {task:"merchant_arrived"});
         await new Promise(res => setTimeout(res, 1000))
