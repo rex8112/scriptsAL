@@ -1,3 +1,4 @@
+import { Mover } from "./mover";
 import { replenish_potions, smart_use_hp_or_mp } from "./utils";
 
 const attack_mode=true;
@@ -23,11 +24,11 @@ export async function RunFarmer() {
         if(can_move_to(target.real_x,target.real_y)) {
           move((target.real_x + character.real_x) / 2, (target.real_y + character.real_y) / 2);
         } else {
-          smart_move(target);
+          Mover.move(target);
         }
       }
     }
   } else if(!is_moving(character)) {
-    smart_move(<SmartMoveToDestination>mon_type);
+    Mover.move(<SmartMoveToDestination>mon_type);
   }
 }

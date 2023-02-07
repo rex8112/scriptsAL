@@ -87,14 +87,7 @@ export class Mover {
 
     static async move(destination: IPosition | string) {
         if (is_string(destination)) {
-            // TODO: Implement
-            /**
-             * if(is_string(x))
-             * {
-             *     await MoverOld.move_by_path(x, nodeReached);
-             *     return true;
-             * }
-             */
+            await Mover.move_by_path(<SmartMoveToDestination>destination);
             return true;
         }
 
@@ -186,6 +179,17 @@ export class Mover {
 
     static async useTown()
     {
+        // Attempt to move away from enemies before portaling.
+        let monster = get_nearest_monster({});
+        while (monster && simple_distance(character, monster) < character.range) {
+            await Mover.moveX(
+                character.x-(monster.x-character.x),
+                character.y-(monster.y-character.y)
+                );
+            monster = get_nearest_monster({});
+            await sleep(150);
+        }
+
         while(is_on_cooldown("use_town"))
             await sleep(100);
 
