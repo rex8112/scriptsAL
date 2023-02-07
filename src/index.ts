@@ -3,40 +3,52 @@
 // If you don't know how to code, don't worry, It's easy.
 // Just set attack_mode to true and ENGAGE!
 
-import { smart_use_hp_or_mp, replenish_potions } from "./utils";
+import { CodeMessageEvent } from "typed-adventureland";
+import { RunFarmer } from "./farmer";
+import { RunMerchant } from "./merchant";
+import { CMTask } from "./types";
+import { get_item_position, get_item_quantity } from "./utils";
 
-var attack_mode=true;
-var mon_type = "bee";
+character.on("cm", (data: CodeMessageEvent<CMTask>) => {
+  const trusted: string[] = []
+  get_characters().forEach((c) => {trusted.push(c.name)})
+
+  if (!trusted.includes(data.name)) {
+    game_log("CM Received from Bad Party: " + data.name + ": " + data.message, "red");
+    return;
+  }
+
+  var message = data.message;
+  if (message.task == "merchant_arrived") {
+    send_gold(data.name, character.gold);
+    send_cm(data.name, {task: "request_potion", data: {hpots: 300 - get_item_quantity("hpot0"), mpots: 300 - get_item_quantity("mpot0")}});
+    game_log(`Requesting Hpots, Mpots: ${300 - get_item_quantity("hpot0")}, ${300 - get_item_quantity("mpot0")}`)
+  } else if (message.task == "request_potion") {
+    if (message.data.hpots > 0) {
+      game_log(`Sending HPotions: ${message.data.hpots}`);
+      var position = get_item_position("hpot0");
+      if (position != undefined) send_item(data.name, position, message.data.hpots);
+    }
+    if (message.data.mpots > 0) {
+      game_log(`Sending MPotions: ${message.data.mpots}`);
+      var position = get_item_position("mpot0");
+      if (position != undefined) send_item(data.name, position, message.data.mpots);
+    }
+  }
+});
 
 setInterval(async function(){
-  smart_use_hp_or_mp();
-  loot();
-  replenish_potions();
-
-  if(!attack_mode || character.rip || is_moving(character)) return;
-
-  const target = get_nearest_monster({type: mon_type});
-  
-  if (target) {
-    change_target(target);
-    if (can_attack(target)) {
-        attack(target);
-    } else {
-      const dist = simple_distance(target,character);
-      if(!is_moving(character) 
-          && dist > character.range - 10) {
-        if(can_move_to(target.real_x,target.real_y)) {
-          move((target.real_x + character.real_x) / 2, (target.real_y + character.real_y) / 2);
-        } else {
-          smart_move(target);
-        }
-      }
-    }
-  } else if(!is_moving(character)) {
-    smart_move(<SmartMoveToDestination>mon_type);
+  if (character.ctype == "merchant") {
+    RunMerchant();
+  } else {
+    RunFarmer();
   }
 
 },1000/4); // Loops every 1/4 seconds.
+
+setInterval(async () => {
+  set(`${character.name}_pos`, {map: character.map, x: character.x, y: character.y})
+},1000);
 
 // Learn Javascript: https://www.codecademy.com/learn/introduction-to-javascript
 // Write your own CODE: https://github.com/kaansoral/adventureland

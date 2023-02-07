@@ -31,6 +31,13 @@ export function get_item_quantity(name: string) {
 	return quantity
 }
 
+export function get_item_position(name: string) {
+	for (let i = 0; i < character.isize; i++) {
+		if (character.items[i] && character.items[i].name==name)
+			return i;
+	}
+}
+
 var replenishing = false
 export function replenish_potions() {
 	if (replenishing) return

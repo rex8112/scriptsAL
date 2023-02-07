@@ -13,5 +13,10 @@
         "name": "Dezara",
         "ctype": "mage",
         "id": "5791015176241152"
+    },
+    {
+        "name": "Dezchant",
+        "ctype": "merchant",
+        "id": "5008084245676032"
     }
 ]
