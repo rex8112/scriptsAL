@@ -12,6 +12,9 @@ export async function RunMerchant() {
     if (busy) return;
     busy = true;
     await restock();
+    await open_stand()
+    await new Promise(res => setTimeout(res, 30000))
+    await close_stand()
     await restock_farmers();
     busy = false;
 }
