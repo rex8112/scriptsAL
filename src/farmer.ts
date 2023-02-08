@@ -2,7 +2,7 @@ import { Mover } from "./mover";
 import { replenish_potions, smart_use_hp_or_mp } from "./utils";
 
 const attack_mode=true;
-const mon_type = "bee";
+const mon_type = "goo";
 
 export async function RunFarmer() {
   smart_use_hp_or_mp();

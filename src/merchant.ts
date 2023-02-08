@@ -1,5 +1,6 @@
 import { IPosition, XOnlineCharacter } from "typed-adventureland";
 import { Mover } from "./mover";
+import { CMRequests } from "./requests";
 import { CharacterData } from "./types";
 import { get_item_quantity } from "./utils";
 
@@ -7,14 +8,16 @@ const characters: {[key: string]: XOnlineCharacter} = {};
 const characterData: CharacterData[] = [];
 
 let busy = false;
+let CMR: CMRequests;
 
-export async function RunMerchant() {
+export async function RunMerchant(cmr: CMRequests) {
+    CMR = cmr;
     use_hp_or_mp();
     if (busy) return;
     busy = true;
     await restock();
     await open_stand()
-    await new Promise(res => setTimeout(res, 30000))
+    await new Promise(res => setTimeout(res, 1000))
     await close_stand()
     await restock_farmers();
     busy = false;
@@ -26,13 +29,17 @@ async function restock_farmers() {
         var char = characters[name];
         if (name == character.name || char.online == 0) continue;
         set_message("Restocking " + char.name)
-        while (simple_distance(character, char) > 100) {
-            let position = get_position(char);
+        let position = get_position(char);
+        while (simple_distance(character, position) > 100) {
+            position = get_position(char);
             await Mover.move(position);
+            game_log("Move Finished.");
             await sleep(150);
         }
-        send_cm(char.name, {task:"merchant_arrived"});
-        await new Promise(res => setTimeout(res, 1000))
+        game_log("Announcing Arrival.", "green");
+        await CMR.request(char.name, {task:"merchant_arrived"});
+        game_log("Moving on.", "green");
+        await sleep(1000);
     }
 }
 

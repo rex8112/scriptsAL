@@ -37,7 +37,7 @@ export class CMRequests {
     messageIncrement: number = 0;
     receiveCallback: (message: Request<any>) => void;
 
-    constructor(callback: (message: any) => void) {
+    constructor(callback: (message: Request<any>) => void) {
         this.receiveCallback = callback;
         character.on("cm", (data) => this.receiveMessage(<CodeMessageEvent<RequestPayload<any>>>data));
     }
@@ -55,8 +55,11 @@ export class CMRequests {
             game_log("CM Received from Bad Party: " + message.name + ": " + message.message, "red");
             return;
         }
-        if (isRequestPayload(message.message))
+        if (isRequestPayload(message.message) && message.message.response === false) {
+            game_log(`New Request Payload CM Received: ${message.name}`);
+            await sleep(150);
             this.receiveCallback(new Request(this, message.message));
+        }
     }
     
     _sendMessage(target: string, payload: RequestPayload<unknown>) {
@@ -67,9 +70,10 @@ export class CMRequests {
      * Send a request to a character and await the response.
      * @param target The character name to send the request to.
      * @param message The message content.
+     * @param timeout Default: 30000. Time in ms to wait before timing out.
      * @returns The response message.
      */
-    async request<T>(target: string, message: T): Promise<ResponseMessage> {
+    async request<T>(target: string, message: T, timeout: number = 30000): Promise<ResponseMessage> {
         const payload: RequestPayload<T> = {
             to: target,
             from: character.name,
@@ -78,8 +82,9 @@ export class CMRequests {
             message_id: `${character.name}_${this.messageIncrement}`
         }
         this.messageIncrement++;
-        var responsePromise = this._getResponsePromise(payload.message_id);
+        var responsePromise = this._getResponsePromise(payload.message_id, timeout);
         this._sendMessage(payload.to, payload);
+        game_log("Awaiting response promise.");
         var response = await responsePromise;
         return response.message;
     }
@@ -92,10 +97,12 @@ export class CMRequests {
      */
     _getResponsePromise(message_id: string, timeout: number = 30_000): Promise<RequestPayload<ResponseMessage>> {
         return new Promise(resolve => {
+            game_log("Building Promise");
             var now = new Date();
             var timedOut = false;
             
-            function onceCMListener(data: CodeMessageEvent<RequestPayload<ResponseMessage>>) {
+            var onceCMListener = (data: CodeMessageEvent<RequestPayload<ResponseMessage>>) => {
+                game_log("onceCMListener Fired.");
                 if (timeout > 0)
                     setTimeout(() => timedOut = true, timeout);
 
@@ -113,6 +120,7 @@ export class CMRequests {
                     character.once("cm", onceCMListener);
                 }
             }
+            game_log("Queuing listener.");
             character.once("cm", onceCMListener);
         });
     }
