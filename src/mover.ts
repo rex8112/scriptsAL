@@ -1,5 +1,5 @@
 import { IPosition, MapKey, MonsterKey, NpcKey } from "typed-adventureland";
-import { isIPosition } from "./typecheck";
+import { isIPosition, isPositionReal } from "./typecheck";
 
 interface PathActionMove {
     action: "Move";
@@ -92,10 +92,11 @@ export class Mover {
         }
 
         var realPos: IPosition;
-        if(isIPosition(destination))
+        if (isPositionReal(destination)) {
+            realPos = {x: Math.round(destination.real_x), y: Math.round(destination.real_y), map: destination.map};
+        } else if (isIPosition(destination)) {
             realPos = destination;
-        else
-        {
+        } else {
             Mover._log("Failed to get path: No destination specified");
             return false;
         }
@@ -103,8 +104,7 @@ export class Mover {
 
         if(character.map == realPos.map  && can_move_to(realPos.x, realPos.y))
             return await Mover.moveX(realPos.x, realPos.y);
-        else
-        {
+        else {
             await Mover.move_by_path(realPos);
             return character.map == realPos.map && character.x >= realPos.x - 10 && character.x <= realPos.x + 10 && character.y >= realPos.y - 10 && character.y <= realPos.y + 10;
         }

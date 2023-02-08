@@ -26,7 +26,7 @@ async function restock_farmers() {
         var char = characters[name];
         if (name == character.name || char.online == 0) continue;
         set_message("Restocking " + char.name)
-        while (simple_distance(character, char) > character.range) {
+        while (simple_distance(character, char) > 100) {
             let position = get_position(char);
             await Mover.move(position);
             await sleep(150);
