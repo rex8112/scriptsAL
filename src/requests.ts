@@ -36,6 +36,7 @@ function isRequestPayload(payload: any): payload is RequestPayload<unknown> {
 export class CMRequests {
     messageIncrement: number = 0;
     receiveCallback: (message: Request<any>) => void;
+    waitingRequests: {[message_id: string]: (data: CodeMessageEvent<RequestPayload<ResponseMessage>>) => void} = {};
 
     constructor(callback: (message: Request<any>) => void) {
         this.receiveCallback = callback;
@@ -59,6 +60,9 @@ export class CMRequests {
             game_log(`New Request Payload CM Received: ${message.name}`);
             await sleep(150);
             this.receiveCallback(new Request(this, message.message));
+        } else if (isRequestPayload(message.message)) {
+            // This calls the callback stored to say the response has arrived.
+            this.waitingRequests[message.message.message_id](<CodeMessageEvent<RequestPayload<ResponseMessage>>>message);
         }
     }
     
@@ -108,6 +112,7 @@ export class CMRequests {
 
                 if (data.message.message_id === message_id) {
                     resolve(data.message);
+                    delete this.waitingRequests[message_id];
                 } else if (timedOut) {
                     resolve({
                         to: data.message.to,
@@ -116,12 +121,11 @@ export class CMRequests {
                         response: true,
                         message: {status: 408, message: "Timed out"}
                     });
-                } else {
-                    character.once("cm", onceCMListener);
+                    delete this.waitingRequests[message_id];
                 }
             }
             game_log("Queuing listener.");
-            character.once("cm", onceCMListener);
+            this.waitingRequests[message_id] = onceCMListener;
         });
     }
 }
