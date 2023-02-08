@@ -14,7 +14,6 @@ var CMR = new CMRequests(async (request) => {
   if (message.task == "merchant_arrived") {
     send_gold(request.from, character.gold);
     request.respondOK("Sent");
-    game_log("Requesting Potions", "green");
     await CMR.request(request.from, {task: "request_potion", data: {hpots: 300 - get_item_quantity("hpot0"), mpots: 300 - get_item_quantity("mpot0")}});
     game_log(`Successfully Requested Hpots, Mpots: ${300 - get_item_quantity("hpot0")}, ${300 - get_item_quantity("mpot0")}`)
   } else if (message.task == "request_potion") {
@@ -32,7 +31,7 @@ var CMR = new CMRequests(async (request) => {
   }
   request.respond({status: 400, message: "Task not recognized."});
 });
-character.on("cm", (data: CodeMessageEvent<CMTask>) => {
+/* character.on("cm", (data: CodeMessageEvent<CMTask>) => {
   const trusted: string[] = []
   get_characters().forEach((c) => {trusted.push(c.name)})
 
@@ -58,7 +57,7 @@ character.on("cm", (data: CodeMessageEvent<CMTask>) => {
       if (position != undefined) send_item(data.name, position, message.data.mpots);
     }
   }
-});
+}); */
 
 setInterval(async function(){
   if (character.ctype == "merchant") {

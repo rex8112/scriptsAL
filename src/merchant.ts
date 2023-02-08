@@ -36,9 +36,7 @@ async function restock_farmers() {
             game_log("Move Finished.");
             await sleep(150);
         }
-        game_log("Announcing Arrival.", "green");
         await CMR.request(char.name, {task:"merchant_arrived"});
-        game_log("Moving on.", "green");
         await sleep(1000);
     }
 }

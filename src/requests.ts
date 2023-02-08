@@ -57,8 +57,7 @@ export class CMRequests {
             return;
         }
         if (isRequestPayload(message.message) && message.message.response === false) {
-            game_log(`New Request Payload CM Received: ${message.name}`);
-            await sleep(150);
+            // await sleep(150);
             this.receiveCallback(new Request(this, message.message));
         } else if (isRequestPayload(message.message)) {
             // This calls the callback stored to say the response has arrived.
@@ -88,7 +87,6 @@ export class CMRequests {
         this.messageIncrement++;
         var responsePromise = this._getResponsePromise(payload.message_id, timeout);
         this._sendMessage(payload.to, payload);
-        game_log("Awaiting response promise.");
         var response = await responsePromise;
         return response.message;
     }
@@ -101,12 +99,10 @@ export class CMRequests {
      */
     _getResponsePromise(message_id: string, timeout: number = 30_000): Promise<RequestPayload<ResponseMessage>> {
         return new Promise(resolve => {
-            game_log("Building Promise");
             var now = new Date();
             var timedOut = false;
             
             var onceCMListener = (data: CodeMessageEvent<RequestPayload<ResponseMessage>>) => {
-                game_log("onceCMListener Fired.");
                 if (timeout > 0)
                     setTimeout(() => timedOut = true, timeout);
 
@@ -124,7 +120,6 @@ export class CMRequests {
                     delete this.waitingRequests[message_id];
                 }
             }
-            game_log("Queuing listener.");
             this.waitingRequests[message_id] = onceCMListener;
         });
     }
