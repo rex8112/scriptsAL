@@ -16,9 +16,9 @@ export async function RunMerchant(cmr: CMRequests) {
     if (busy) return;
     busy = true;
     await restock();
-    await open_stand()
-    await new Promise(res => setTimeout(res, 1000))
-    await close_stand()
+    await open_stand();
+    await sleep(15000);
+    await close_stand();
     await restock_farmers();
     busy = false;
 }
