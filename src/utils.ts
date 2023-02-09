@@ -1,3 +1,5 @@
+import { ItemInfo } from "typed-adventureland"
+
 var last_potion = new Date()
 export function smart_use_hp_or_mp() {
   var heal = 0
@@ -20,6 +22,20 @@ export function smart_use_hp_or_mp() {
     last_potion = new Date()
   else
     return resolving_promise({reason:"full",success:false,used:false});
+}
+
+/**
+ * Get an array of all instances of an item in your inventory.
+ * @param name The name of the item.
+ * @returns An array of item info and positions for each instance of the item in your inventory.
+ */
+export function get_item(name: string): {item: ItemInfo, pos: number}[] {
+  var items: {item: ItemInfo, pos: number}[] = [];
+  for (let i = 0; i < character.isize; i++) {
+    if (character.items[i] && character.items[i].name==name)
+      items.push({item: character.items[i], pos: i});
+  }
+  return items;
 }
 
 export function get_item_quantity(name: string) {
@@ -47,7 +63,7 @@ export function replenish_potions() {
   var healing_target = 200
   var mana_target = 300
 
-  if (healing_pots < 100 || mana_pots < 100) {
+  if (healing_pots < 10 || mana_pots < 10) {
     replenishing = true
     var x = character.x
     var y = character.y

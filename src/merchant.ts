@@ -1,11 +1,12 @@
-import { IPosition, XOnlineCharacter } from "typed-adventureland";
+import { IPosition, ItemInfo, SlotType, XOnlineCharacter } from "typed-adventureland";
 import { Mover } from "./mover";
 import { CMRequests } from "./requests";
-import { CharacterData } from "./types";
+import { CharacterData, LocalChacterInfo } from "./types";
 import { get_item_quantity } from "./utils";
 
 const characters: {[key: string]: XOnlineCharacter} = {};
-const characterData: CharacterData[] = [];
+
+let characterData: {[name: string]: LocalChacterInfo} = {};
 
 let busy = false;
 let CMR: CMRequests;
@@ -17,7 +18,8 @@ export async function RunMerchant(cmr: CMRequests) {
     busy = true;
     await restock();
     await open_stand();
-    await sleep(15000);
+    await sleep(15_000);
+    characterData = await gather_info();
     await close_stand();
     await restock_farmers();
     busy = false;
@@ -53,6 +55,21 @@ async function restock() {
     } catch (data: any) {
         if (data.reason === "distance") await restock();
     }
+}
+
+async function gather_info(): Promise<{[name: string]: LocalChacterInfo}> {
+    var cData: {[name: string]: LocalChacterInfo} = {};
+    var promises = [];
+    for (var name in characters) {
+        promises.push(CMR.request(name, {task: "request_info", data: null}, 5_000));
+    }
+    var resolved = await Promise.all(promises);
+    for (let data of resolved) {
+        if (data.status != 200) continue;
+        var resp = <LocalChacterInfo>data.message;
+        cData[resp.name] = resp;
+    }
+    return cData;
 }
 
 function get_position(char: XOnlineCharacter): IPosition {

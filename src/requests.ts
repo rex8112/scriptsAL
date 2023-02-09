@@ -2,7 +2,7 @@ import { CodeMessageEvent } from "typed-adventureland";
 
 interface ResponseOK {
     status: 200;
-    message: any;
+    message: unknown;
 }
 
 interface ResponseTimeOut {
