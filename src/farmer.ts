@@ -1,13 +1,13 @@
-import { Mover } from "./mover";
-import { replenish_potions, smart_use_hp_or_mp } from "./utils";
+import { Mover } from "./Mover";
+import { replenishPotions, smartUseHpOrMp } from "./Utils";
 
 const attack_mode=true;
 const mon_type = "bee";
 
 export async function RunFarmer() {
-  smart_use_hp_or_mp();
+  smartUseHpOrMp();
   loot();
-  replenish_potions();
+  replenishPotions();
 
   if(!attack_mode || character.rip || is_moving(character)) return;
 

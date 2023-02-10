@@ -1,8 +1,8 @@
 import { IPosition, ItemInfo, SlotType, XOnlineCharacter } from "typed-adventureland";
-import { Mover } from "./mover";
-import { CMRequests } from "./requests";
-import { CharacterData, LocalChacterInfo } from "./types";
-import { get_item_quantity } from "./utils";
+import { Mover } from "./Mover";
+import { CMRequests } from "./CMRequests";
+import { CharacterData, LocalChacterInfo } from "./Types";
+import { getItemQuantity } from "./Utils";
 
 const characters: {[key: string]: XOnlineCharacter} = {};
 
@@ -45,8 +45,8 @@ async function restock_farmers() {
 
 async function restock() {
   await Mover.move("potions");
-  var healing_pots = get_item_quantity("hpot0");
-  var mana_pots = get_item_quantity("mpot0");
+  var healing_pots = getItemQuantity("hpot0");
+  var mana_pots = getItemQuantity("mpot0");
   var healing_target = 1000;
   var mana_target = 1000;
   try {

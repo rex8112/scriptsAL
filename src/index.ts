@@ -4,27 +4,27 @@
 // Just set attack_mode to true and ENGAGE!
 
 import { CodeMessageEvent } from "typed-adventureland";
-import { RunFarmer } from "./farmer";
-import { RunMerchant } from "./merchant";
-import { CMRequests } from "./requests";
-import { CMTask } from "./types";
-import { get_item_position, get_item_quantity } from "./utils";
+import { RunFarmer } from "./Farmer";
+import { RunMerchant } from "./Merchant";
+import { CMRequests } from "./CMRequests";
+import { CMTask } from "./Types";
+import { getItemPosition, getItemQuantity } from "./Utils";
 var CMR = new CMRequests(async (request) => {
   var message: CMTask = request.message;
   if (message.task == "merchant_arrived") {
     send_gold(request.from, character.gold);
     request.respondOK("Sent");
-    await CMR.request(request.from, {task: "request_potion", data: {hpots: 300 - get_item_quantity("hpot0"), mpots: 300 - get_item_quantity("mpot0")}});
-    game_log(`Successfully Requested Hpots, Mpots: ${300 - get_item_quantity("hpot0")}, ${300 - get_item_quantity("mpot0")}`)
+    await CMR.request(request.from, {task: "request_potion", data: {hpots: 300 - getItemQuantity("hpot0"), mpots: 300 - getItemQuantity("mpot0")}});
+    game_log(`Successfully Requested Hpots, Mpots: ${300 - getItemQuantity("hpot0")}, ${300 - getItemQuantity("mpot0")}`)
   } else if (message.task == "request_potion") {
     if (message.data.hpots > 0) {
       game_log(`Sending HPotions: ${message.data.hpots}`);
-      var position = get_item_position("hpot0");
+      var position = getItemPosition("hpot0");
       if (position != undefined) send_item(request.from, position, message.data.hpots);
     }
     if (message.data.mpots > 0) {
       game_log(`Sending MPotions: ${message.data.mpots}`);
-      var position = get_item_position("mpot0");
+      var position = getItemPosition("mpot0");
       if (position != undefined) send_item(request.from, position, message.data.mpots);
     }
     request.respondOK("Sent");

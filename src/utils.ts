@@ -1,14 +1,14 @@
 import { ItemInfo } from "typed-adventureland"
 
-var last_potion = new Date()
-export function smart_use_hp_or_mp() {
+var lastPotion = new Date()
+export function smartUseHpOrMp() {
   var heal = 0
   var mana = 0
   for (let i = 0; i < character.isize; i++) {
     if (character.items[i] && character.items[i].name=="hpot0") heal = 200
     else if (character.items[i] && character.items[i].name=="mpot0") mana = 300
   }
-  if(mssince(last_potion)<min(200,character.ping*3)) 
+  if(mssince(lastPotion)<min(200,character.ping*3)) 
     return resolving_promise({reason:"safeties",success:false,used:false})
   var used=true
   if(is_on_cooldown("use_hp")) 
@@ -19,7 +19,7 @@ export function smart_use_hp_or_mp() {
     return use_skill("use_mp")
   else used = false
   if (used)
-    last_potion = new Date()
+    lastPotion = new Date()
   else
     return resolving_promise({reason:"full",success:false,used:false});
 }
@@ -29,7 +29,7 @@ export function smart_use_hp_or_mp() {
  * @param name The name of the item.
  * @returns An array of item info and positions for each instance of the item in your inventory.
  */
-export function get_item(name: string): {item: ItemInfo, pos: number}[] {
+export function getItem(name: string): {item: ItemInfo, pos: number}[] {
   var items: {item: ItemInfo, pos: number}[] = [];
   for (let i = 0; i < character.isize; i++) {
     if (character.items[i] && character.items[i].name==name)
@@ -38,7 +38,7 @@ export function get_item(name: string): {item: ItemInfo, pos: number}[] {
   return items;
 }
 
-export function get_item_quantity(name: string) {
+export function getItemQuantity(name: string) {
   var quantity = 0
   for (let i = 0; i < character.isize; i++) {
     if (character.items[i] && character.items[i].name==name)
@@ -47,7 +47,7 @@ export function get_item_quantity(name: string) {
   return quantity
 }
 
-export function get_item_position(name: string) {
+export function getItemPosition(name: string) {
   for (let i = 0; i < character.isize; i++) {
     if (character.items[i] && character.items[i].name==name)
       return i;
@@ -55,11 +55,11 @@ export function get_item_position(name: string) {
 }
 
 var replenishing = false
-export function replenish_potions() {
+export function replenishPotions() {
   if (replenishing) return
 
-  var healing_pots = get_item_quantity("hpot0")
-  var mana_pots = get_item_quantity("mpot0")
+  var healing_pots = getItemQuantity("hpot0")
+  var mana_pots = getItemQuantity("mpot0")
   var healing_target = 200
   var mana_target = 300
 

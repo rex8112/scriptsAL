@@ -1,7 +1,7 @@
 import { ClassKey, ItemInfo, ItemKey } from "typed-adventureland";
-import { Mover } from "./mover";
-import { CMRequests } from "./requests";
-import { LocalChacterInfo } from "./types";
+import { Mover } from "./Mover";
+import { CMRequests } from "./CMRequests";
+import { LocalChacterInfo } from "./Types";
 
 class BaseCharacter {
   original: Character;
@@ -22,7 +22,7 @@ class BaseCharacter {
    * @param name The name of the item.
    * @returns An array of item info and positions for each instance of the item in your inventory.
    */
-  get_item(name: string): {item: ItemInfo, pos: number}[] {
+  getItem(name: string): {item: ItemInfo, pos: number}[] {
     var items: {item: ItemInfo, pos: number}[] = [];
     for (let i = 0; i < character.isize; i++) {
     if (character.items[i] && character.items[i].name==name)
@@ -40,28 +40,28 @@ class BaseCharacter {
     return Mover.move(dest);
   }
 
-  one_at_a_time(func: () => Promise<void>) {
+  oneAtATime(func: () => Promise<void>) {
     this.working = true;
     func().finally(() => this.working = false);
   }
 }
 
-class MerchantCharacter extends BaseCharacter {
-  static items_to_take: ItemKey[] = [
+export class MerchantCharacter extends BaseCharacter {
+  static itemsToTake: ItemKey[] = [
     "beewings", "crabclaw", "gslime", "gem0", "seashell", "stinger", "hpbelt",
     "ringsj", "hpamulet", "wcap", "wshoes", "intscroll"
   ];
-  character_info: {[name: string]: LocalChacterInfo} = {};
-  update_task: NodeJS.Timer | null = null;
+  characterInfo: {[name: string]: LocalChacterInfo} = {};
+  updateTask: NodeJS.Timer | null = null;
 
   constructor(ch: Character, cmr: CMRequests) {
     super(ch, cmr);
-    this.start_tasks();
+    this.startTasks();
   }
 
-  start_tasks() {
-    if (this.update_task === null)
-      this.update_task = setInterval(this.update_character_info, 30_000);
+  startTasks() {
+    if (this.updateTask === null)
+      this.updateTask = setInterval(this.updateCharacterInfo, 30_000);
   }
 
   async run() {
@@ -70,16 +70,16 @@ class MerchantCharacter extends BaseCharacter {
 
   }
 
-  get_takable_items(char: LocalChacterInfo): number[] {
+  getTakableItems(char: LocalChacterInfo): number[] {
     var items: number[] = [];
     for (let i = 0; i < character.isize; i++) {
-      if (char.items[i] && MerchantCharacter.items_to_take.includes(char.items[i].name))
+      if (char.items[i] && MerchantCharacter.itemsToTake.includes(char.items[i].name))
         items.push(i);
     }
     return items;
   }
 
-  async update_character_info() {
+  async updateCharacterInfo() {
     var cData: {[name: string]: LocalChacterInfo} = {};
     var promises = [];
     for (var char of get_characters()) {
@@ -91,6 +91,6 @@ class MerchantCharacter extends BaseCharacter {
       var resp = <LocalChacterInfo>data.message;
       cData[resp.name] = resp;
     }
-    this.character_info = cData;
+    this.characterInfo = cData;
   }
 }

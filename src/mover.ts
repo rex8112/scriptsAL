@@ -1,5 +1,5 @@
 import { IPosition, MapKey, MonsterKey, NpcKey } from "typed-adventureland";
-import { isIPosition, isPositionReal } from "./typecheck";
+import { isIPosition, isPositionReal } from "./TypeChecks";
 
 interface PathActionMove {
   action: "Move";
