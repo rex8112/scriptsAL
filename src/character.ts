@@ -71,7 +71,12 @@ class MerchantCharacter extends BaseCharacter {
     }
 
     get_takable_items(char: LocalChacterInfo): number[] {
-
+        var items: number[] = [];
+        for (let i = 0; i < character.isize; i++) {
+            if (char.items[i] && MerchantCharacter.items_to_take.includes(char.items[i].name))
+                items.push(i);
+        }
+        return items;
     }
 
     async update_character_info() {
@@ -86,7 +91,6 @@ class MerchantCharacter extends BaseCharacter {
             var resp = <LocalChacterInfo>data.message;
             cData[resp.name] = resp;
         }
-        this.last_update = new Date();
         this.character_info = cData;
     }
 }
