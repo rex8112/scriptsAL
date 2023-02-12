@@ -3,6 +3,7 @@ import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
 import { CharacterData, LocalChacterInfo } from "./Types";
 import { getItemQuantity } from "./Utils";
+import { MerchantCharacter } from "./Character";
 
 const characters: {[key: string]: XOnlineCharacter} = {};
 
@@ -11,8 +12,8 @@ let characterData: {[name: string]: LocalChacterInfo} = {};
 let busy = false;
 let CMR: CMRequests;
 
-export async function RunMerchant(cmr: CMRequests) {
-  CMR = cmr;
+export async function RunMerchant() {
+  /* CMR = cmr;
   use_hp_or_mp();
   if (busy) return;
   busy = true;
@@ -22,7 +23,7 @@ export async function RunMerchant(cmr: CMRequests) {
   characterData = await gather_info();
   await close_stand();
   await restock_farmers();
-  busy = false;
+  busy = false; */
 }
 
 async function restock_farmers() {
@@ -45,8 +46,8 @@ async function restock_farmers() {
 
 async function restock() {
   await Mover.move("potions");
-  var healing_pots = getItemQuantity("hpot0");
-  var mana_pots = getItemQuantity("mpot0");
+  var healing_pots = getItemQuantity("hpot0", character.items, character.isize);
+  var mana_pots = getItemQuantity("mpot0", character.items, character.isize);
   var healing_target = 1000;
   var mana_target = 1000;
   try {

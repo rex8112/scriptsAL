@@ -1,3 +1,4 @@
+import { BaseCharacter } from "./Character";
 import { Mover } from "./Mover";
 import { replenishPotions, smartUseHpOrMp } from "./Utils";
 

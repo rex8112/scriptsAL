@@ -9,7 +9,8 @@ import { RunMerchant } from "./Merchant";
 import { CMRequests } from "./CMRequests";
 import { CMTask } from "./Types";
 import { getItemPosition, getItemQuantity } from "./Utils";
-var CMR = new CMRequests(async (request) => {
+import { BaseCharacter, MerchantCharacter } from "./Character";
+/* var CMR = new CMRequests(async (request) => {
   var message: CMTask = request.message;
   if (message.task == "merchant_arrived") {
     send_gold(request.from, character.gold);
@@ -30,7 +31,7 @@ var CMR = new CMRequests(async (request) => {
     request.respondOK("Sent");
   }
   request.respond({status: 400, message: "Task not recognized."});
-});
+}); */
 /* character.on("cm", (data: CodeMessageEvent<CMTask>) => {
   const trusted: string[] = []
   get_characters().forEach((c) => {trusted.push(c.name)})
@@ -58,11 +59,14 @@ var CMR = new CMRequests(async (request) => {
     }
   }
 }); */
+var char: MerchantCharacter | BaseCharacter | null = null;
 
 setInterval(async function(){
   if (character.ctype == "merchant") {
-    RunMerchant(CMR);
+    if (char === null) char = new MerchantCharacter(character);
+    char.run();
   } else {
+    if (char === null) char = new BaseCharacter(character);
     RunFarmer();
   }
 

@@ -38,18 +38,18 @@ export function getItem(name: string): {item: ItemInfo, pos: number}[] {
   return items;
 }
 
-export function getItemQuantity(name: string) {
+export function getItemQuantity(name: string, inventory: ItemInfo[], isize: number) {
   var quantity = 0
-  for (let i = 0; i < character.isize; i++) {
-    if (character.items[i] && character.items[i].name==name)
-      quantity += character.items[i].q || 0
+  for (let i = 0; i < isize; i++) {
+    if (inventory[i] && inventory[i].name==name)
+      quantity += inventory[i].q || 0
   }
   return quantity
 }
 
-export function getItemPosition(name: string) {
-  for (let i = 0; i < character.isize; i++) {
-    if (character.items[i] && character.items[i].name==name)
+export function getItemPosition(name: string, inventory: ItemInfo[], isize: number) {
+  for (let i = 0; i < isize; i++) {
+    if (inventory[i] && inventory[i].name==name)
       return i;
   }
 }
@@ -58,8 +58,8 @@ var replenishing = false
 export function replenishPotions() {
   if (replenishing) return
 
-  var healing_pots = getItemQuantity("hpot0")
-  var mana_pots = getItemQuantity("mpot0")
+  var healing_pots = getItemQuantity("hpot0", character.items, character.isize)
+  var mana_pots = getItemQuantity("mpot0", character.items, character.isize)
   var healing_target = 200
   var mana_target = 300
 

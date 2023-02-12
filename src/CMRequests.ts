@@ -15,7 +15,7 @@ interface ResponseBadRequest {
   message: string;
 }
 
-type ResponseMessage = ResponseOK | ResponseTimeOut | ResponseBadRequest;
+export type ResponseMessage = ResponseOK | ResponseTimeOut | ResponseBadRequest;
 
 interface RequestPayload<T> {
   to: string;
@@ -38,6 +38,12 @@ export class CMRequests {
   receiveCallback: (message: Request<any>) => void;
   waitingRequests: {[message_id: string]: (data: CodeMessageEvent<RequestPayload<ResponseMessage>>) => void} = {};
 
+  /**
+   * Builds a request system akin to API requests, allows you to make an awaitable request.
+   * This class does not handle formats, such as whether you're doing a GET or POST request.
+   * All it handles is specifying a response code but the user is in charge of the format of the requests sent.
+   * @param callback The callback that handles new requests.
+   */
   constructor(callback: (message: Request<any>) => void) {
     this.receiveCallback = callback;
     character.on("cm", (data) => this.receiveMessage(<CodeMessageEvent<RequestPayload<any>>>data));
@@ -52,20 +58,23 @@ export class CMRequests {
     const trusted: string[] = []
     get_characters().forEach((c) => {trusted.push(c.name)})
 
-    if (!trusted.includes(message.name)) {
+    if (!trusted.includes(message.name) || message.name === character.name) {
       game_log("CM Received from Bad Party: " + message.name + ": " + message.message, "red");
       return;
     }
     if (isRequestPayload(message.message) && message.message.response === false) {
       // await sleep(150);
+      console.log(`Received: `, message);
       this.receiveCallback(new Request(this, message.message));
     } else if (isRequestPayload(message.message)) {
       // This calls the callback stored to say the response has arrived.
+      console.log(`Responded: `, message);
       this.waitingRequests[message.message.message_id](<CodeMessageEvent<RequestPayload<ResponseMessage>>>message);
     }
   }
   
   _sendMessage(target: string, payload: RequestPayload<unknown>) {
+    console.log(`Sending: `, payload);
     send_cm(target, payload);
   }
 
@@ -76,7 +85,7 @@ export class CMRequests {
    * @param timeout Default: 30000. Time in ms to wait before timing out.
    * @returns The response message.
    */
-  async request<T>(target: string, message: T, timeout: number = 30000): Promise<ResponseMessage> {
+  async request<T>(target: string, message: T, timeout: number = 30_000): Promise<ResponseMessage> {
     const payload: RequestPayload<T> = {
       to: target,
       from: character.name,
@@ -85,7 +94,7 @@ export class CMRequests {
       message_id: `${character.name}_${this.messageIncrement}`
     }
     this.messageIncrement++;
-    var responsePromise = this._getResponsePromise(payload.message_id, timeout);
+    var responsePromise = this._getResponsePromise(payload, timeout);
     this._sendMessage(payload.to, payload);
     var response = await responsePromise;
     return response.message;
@@ -97,35 +106,36 @@ export class CMRequests {
    * @param timeout The time in ms that it will wait.
    * @returns A Promise of the returning payload
    */
-  _getResponsePromise(message_id: string, timeout: number = 30_000): Promise<RequestPayload<ResponseMessage>> {
+  _getResponsePromise(payload: RequestPayload<unknown>, timeout: number = 30_000): Promise<RequestPayload<ResponseMessage>> {
     return new Promise(resolve => {
-      var now = new Date();
-      var timedOut = false;
-      
-      var onceCMListener = (data: CodeMessageEvent<RequestPayload<ResponseMessage>>) => {
-        if (timeout > 0)
-          setTimeout(() => timedOut = true, timeout);
-
-        if (data.message.message_id === message_id) {
-          resolve(data.message);
-          delete this.waitingRequests[message_id];
-        } else if (timedOut) {
+      var tout: NodeJS.Timeout | null = null;
+      if (timeout > 0) {
+        tout = setTimeout(() => { 
           resolve({
-            to: data.message.to,
-            from: data.message.from,
-            message_id: data.message.message_id,
+            to: payload.to,
+            from: payload.from,
+            message_id: payload.message_id,
             response: true,
             message: {status: 408, message: "Timed out"}
           });
-          delete this.waitingRequests[message_id];
+          delete this.waitingRequests[payload.message_id];
+        }, timeout);
+      }
+      
+      var onceCMListener = (data: CodeMessageEvent<RequestPayload<ResponseMessage>>) => {
+
+        if (data.message.message_id === payload.message_id) {
+          if (tout != null) clearTimeout(tout);
+          resolve(data.message);
+          delete this.waitingRequests[payload.message_id];
         }
       }
-      this.waitingRequests[message_id] = onceCMListener;
+      this.waitingRequests[payload.message_id] = onceCMListener;
     });
   }
 }
 
-class Request<T> {
+export class Request<T> {
   parent: CMRequests;
   payload: RequestPayload<T>;
 
