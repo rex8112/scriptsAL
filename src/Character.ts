@@ -1,9 +1,10 @@
-import { ClassKey, IPosition, ItemInfo, ItemKey } from "typed-adventureland";
+import { ClassKey, IPosition, ItemInfo, ItemKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
 import { LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
 import { getItemPosition, getItemQuantity } from "./Utils";
+
 
 export class BaseCharacter {
   original: Character;
@@ -60,6 +61,7 @@ export class MerchantCharacter extends BaseCharacter {
   updateTask: NodeJS.Timer | null = null;
   potionUseTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
+  inspectMerchantTask: NodeJS.Timer | null = null;
 
   constructor(ch: Character) {
     super(ch);
@@ -73,16 +75,16 @@ export class MerchantCharacter extends BaseCharacter {
     if (this.potionUseTask === null)
       this.potionUseTask = setInterval(use_hp_or_mp, 250);
     if (this.standTask === null)
-      this.standTask = setInterval(this.open_close_stand.bind(this), 250)
+      this.standTask = setInterval(this.open_close_stand.bind(this), 250);
+    if (this.inspectMerchantTask === null)
+      this.inspectMerchantTask = setInterval(this.inspectNearbyMerchants.bind(this), 5_000);
   }
 
   async run() {
-    if (this.working === true) return;
-
-    if (this.getCompoundableItems().length > 0) this.oneAtATime(this.compoundItems.bind(this));
-    if (this.getUpgradableItems().length > 0) this.oneAtATime(this.upgradeItems.bind(this));
-    if (this.needRestock()) this.oneAtATime(this.restock.bind(this));
-    if (this.needFarmerRun()) this.oneAtATime(this.farmerRun.bind(this));
+    if (this.getCompoundableItems().length > 0) await this.compoundItems();
+    if (this.getUpgradableItems().length > 0) await this.upgradeItems();
+    if (this.needRestock()) await this.restock();
+    if (this.needFarmerRun()) await this.farmerRun();
 
     setTimeout(this.run.bind(this), 1_000);
   }
@@ -96,7 +98,7 @@ export class MerchantCharacter extends BaseCharacter {
   }
 
   open_close_stand() {
-    if (this.working) {
+    if (is_moving(character)) {
       close_stand();
     } else {
       open_stand();
@@ -256,6 +258,20 @@ export class MerchantCharacter extends BaseCharacter {
   async updateCharacterInfo() {
     var cData = await this.CM.gatherAllCharacterInfo();
     this.characterInfo = cData;
+  }
+
+  inspectNearbyMerchants() {
+    for (var name in parent.entities) {
+      let char = parent.entities[name];
+      if (!char.player || char.ctype != "merchant") continue;
+      for (var ename in char.slots) {
+        if (!ename.startsWith("trade")) continue;
+        let item = char.slots[<TradeSlotType>ename];
+        if (item && item.giveaway && !Object.values(<Record<string, string>>item.registry).includes(character.name)) {
+          join_giveaway(name, <TradeSlotType>ename, item.rid);
+        }
+      }
+    }
   }
 }
 

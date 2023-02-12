@@ -1,4 +1,4 @@
-import { ItemInfo, SlotType } from "typed-adventureland";
+import { ItemInfo, SlotType, TradeSlotType } from "typed-adventureland";
 import { CharacterEntitySlotsInfos } from "typed-adventureland/dist/src/entities/character-entity";
 
 export interface CharacterData {
