@@ -64,17 +64,14 @@ export class CMRequests {
     }
     if (isRequestPayload(message.message) && message.message.response === false) {
       // await sleep(150);
-      console.log(`Received: `, message);
       this.receiveCallback(new Request(this, message.message));
     } else if (isRequestPayload(message.message)) {
       // This calls the callback stored to say the response has arrived.
-      console.log(`Responded: `, message);
       this.waitingRequests[message.message.message_id](<CodeMessageEvent<RequestPayload<ResponseMessage>>>message);
     }
   }
   
   _sendMessage(target: string, payload: RequestPayload<unknown>) {
-    console.log(`Sending: `, payload);
     send_cm(target, payload);
   }
 

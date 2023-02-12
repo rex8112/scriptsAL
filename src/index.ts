@@ -61,6 +61,17 @@ import { BaseCharacter, MerchantCharacter } from "./Character";
 }); */
 var char: MerchantCharacter | BaseCharacter | null = null;
 
+if (character.ctype == "merchant") {
+  if (char === null) char = new MerchantCharacter(character);
+  char.run();
+} else {
+  setInterval(async () => {
+    if (char === null) char = new BaseCharacter(character);
+    RunFarmer();
+  }, 250);
+}
+
+
 setInterval(async function(){
   if (character.ctype == "merchant") {
     if (char === null) char = new MerchantCharacter(character);

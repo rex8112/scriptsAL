@@ -45,8 +45,9 @@ export class BaseCharacter {
   }
 
   oneAtATime(func: () => Promise<void>) {
+    if (this.working === true) return;
     this.working = true;
-    func().finally(() => this.working = false);
+    func().finally(() => {this.working = false});
   }
 }
 
@@ -57,21 +58,47 @@ export class MerchantCharacter extends BaseCharacter {
   ];
   characterInfo: {[name: string]: LocalChacterInfo} = {};
   updateTask: NodeJS.Timer | null = null;
+  potionUseTask: NodeJS.Timer | null = null;
 
   constructor(ch: Character) {
     super(ch);
     this.startTasks();
+    this.updateCharacterInfo();
   }
 
   startTasks() {
     if (this.updateTask === null)
       this.updateTask = setInterval(this.updateCharacterInfo.bind(this), 30_000);
+    if (this.potionUseTask === null)
+      this.potionUseTask = setInterval(use_hp_or_mp, 250);
   }
 
   async run() {
     if (this.working === true) return;
 
+    if (this.getCompoundableItems().length > 0) this.oneAtATime(this.compoundItems.bind(this));
     if (this.getUpgradableItems().length > 0) this.oneAtATime(this.upgradeItems.bind(this));
+    if (this.needRestock()) this.oneAtATime(this.restock.bind(this));
+    if (this.needFarmerRun()) this.oneAtATime(this.farmerRun.bind(this));
+
+    setTimeout(this.run.bind(this), 1_000);
+  }
+
+  needRestock() {
+    let hpots = getItemQuantity("hpot0", character.items, character.isize);
+    let mpots = getItemQuantity("mpot0", character.items, character.isize)
+    if (hpots < 1_000) return true;
+    if (mpots < 1_000) return true;
+    return false;
+  }
+
+  async restock() {
+    await this.move("potions");
+
+    let hpots = getItemQuantity("hpot0", character.items, character.isize);
+    let mpots = getItemQuantity("mpot0", character.items, character.isize)
+    if (hpots < 1_000) buy("hpot0", 1_000 - hpots);
+    if (mpots < 1_000) buy("mpot0", 1_000 - mpots);
   }
 
   async farmerRun() {
@@ -83,7 +110,8 @@ export class MerchantCharacter extends BaseCharacter {
       let position = get_position(char);
       while (simple_distance(character, position) > 100) {
         position = get_position(char);
-        await Mover.move(position);
+        await this.move(position);
+        game_log("Move Finished")
         await sleep(150);
       }
       let promises = [];
@@ -102,7 +130,6 @@ export class MerchantCharacter extends BaseCharacter {
 
       set_message("Waiting");
       await Promise.all(promises);
-      await sleep(1000);
     }
   }
 
@@ -127,6 +154,23 @@ export class MerchantCharacter extends BaseCharacter {
     }
   }
 
+  async compoundItems() {
+    var items = this.getCompoundableItems();
+    var totalAttempts = items.length;
+    var scrolls = getItemQuantity("cscroll0", character.items, character.isize);
+    if (scrolls < totalAttempts) {
+      set_message("Restocking");
+      await this.move("scrolls");
+      buy("cscroll0", totalAttempts - scrolls);
+    }
+    await this.move("compound");
+    set_message("Compounding");
+    for (var i in items) {
+      let pos = items[i];
+      let result = await compound(pos[0], pos[1], pos[2], <number>getItemPosition("cscroll0", character.items, character.isize))
+    }
+  }
+
   needFarmerRun(): boolean {
     var go = false;
     for (var name in this.characterInfo) {
@@ -139,6 +183,10 @@ export class MerchantCharacter extends BaseCharacter {
     return go;
   }
 
+  /**
+   * 
+   * @returns Returns an array of number pairs: [islot, times_to_upgrade]
+   */
   getUpgradableItems(): [number, number][] {
     var items: [number, number][] = [];
     for (let i = 0; i < character.isize; i++) {
@@ -154,6 +202,36 @@ export class MerchantCharacter extends BaseCharacter {
     return items;
   }
 
+  getCompoundableItems(): [number, number, number][] {
+    var items: {[name: string]: number[]} = {};
+    for (let i = 0; i < character.isize; i++) {
+      if (character.items[i]) {
+        let item = character.items[i];
+        let meta = G.items[item.name];
+        if (meta.grades && (meta.grades[0] < 1 || meta.grades[0] < <number>item.level)) continue;
+        if (meta.compound) {
+          let name = `${item.name}${item.level}`;
+          if (items[name] === undefined)
+            items[name] = [i];
+          else
+            items[name].push(i);
+        }
+      }
+    }
+
+    let pos: [number, number, number][] = [];
+    for (var name in items) {
+      let positions = items[name];
+      if (positions.length < 3) continue;
+      let compounds = Math.floor(positions.length / 3);
+      for (let i = 0; i < compounds; i++) {
+        let start = i * 3;
+        pos.push([positions[start], positions[start+1], positions[start+2]])
+      }
+    }
+    return pos;
+  }
+
   getTakableItems(char: LocalChacterInfo): [number, number][] {
     var items: [number, number][] = [];
     for (let i = 0; i < char.isize; i++) {
@@ -166,7 +244,6 @@ export class MerchantCharacter extends BaseCharacter {
   async updateCharacterInfo() {
     var cData = await this.CM.gatherAllCharacterInfo();
     this.characterInfo = cData;
-    console.log(Object.keys(this.characterInfo));
   }
 }
 

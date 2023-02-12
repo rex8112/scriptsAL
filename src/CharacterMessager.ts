@@ -68,10 +68,11 @@ export class CharacterMessager {
    */
   async requestItems(name: string, items: [number, number][]) {
     var request: CMRequestItems = {task: "request_items", data: items};
-    var resp = await this.cmr.request(name, request);
+    var resp = await this.cmr.request(name, request, 5_000);
     if (resp.status == 200) {
       return <CMRequestItemsReply>resp.message;
     }
+    game_log("Items Timed Out")
     return null;
   }
 
@@ -102,10 +103,11 @@ export class CharacterMessager {
       task: "request_gold",
       data: gold
     };
-    var resp = await this.cmr.request(name, request);
+    var resp = await this.cmr.request(name, request, 5_000);
     if (resp.status == 200) {
       return <CMRequestGoldReply>resp.message;
     }
+    game_log("Gold Timed Out")
     return null;
   }
 
@@ -113,9 +115,9 @@ export class CharacterMessager {
     var target = request.from;
     try {
       send_gold(target, request.message.data);
-      return true;
+      request.respondOK(true);
     } catch {
-      return false;
+      request.respondOK(false);
     }
   }
 }
