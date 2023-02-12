@@ -134,14 +134,15 @@ export class MerchantCharacter extends BaseCharacter {
       let hpots = getItemPosition("hpot0", character.items, character.isize);
       let hneeded = 300 - getItemQuantity("hpot0", char.items, char.isize)
       let mpots = getItemPosition("mpot0", character.items, character.isize);
-      let mneeded = 300 - getItemQuantity("mpot0", char.items, char.isize)
+      let mneeded = 300 - getItemQuantity("mpot0", char.items, char.isize);
 
-      if (hpots && hneeded > 0) send_item(name, hpots, hneeded);
-      if (mpots && mneeded > 0) send_item(name, mpots, mneeded);
+      if (hpots != null && hneeded > 0) await send_item(name, hpots, hneeded);
+      if (mpots != null && mneeded > 0) await send_item(name, mpots, mneeded);
 
       set_message("Waiting");
       await Promise.all(promises);
     }
+    await this.updateCharacterInfo();
   }
 
   async upgradeItems() {

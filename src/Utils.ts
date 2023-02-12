@@ -52,6 +52,7 @@ export function getItemPosition(name: string, inventory: ItemInfo[], isize: numb
     if (inventory[i] && inventory[i].name==name)
       return i;
   }
+  return null
 }
 
 var replenishing = false
