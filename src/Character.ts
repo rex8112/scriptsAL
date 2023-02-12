@@ -59,6 +59,7 @@ export class MerchantCharacter extends BaseCharacter {
   characterInfo: {[name: string]: LocalChacterInfo} = {};
   updateTask: NodeJS.Timer | null = null;
   potionUseTask: NodeJS.Timer | null = null;
+  standTask: NodeJS.Timer | null = null;
 
   constructor(ch: Character) {
     super(ch);
@@ -71,6 +72,8 @@ export class MerchantCharacter extends BaseCharacter {
       this.updateTask = setInterval(this.updateCharacterInfo.bind(this), 30_000);
     if (this.potionUseTask === null)
       this.potionUseTask = setInterval(use_hp_or_mp, 250);
+    if (this.standTask === null)
+      this.standTask = setInterval(this.open_close_stand.bind(this), 250)
   }
 
   async run() {
@@ -90,6 +93,14 @@ export class MerchantCharacter extends BaseCharacter {
     if (hpots < 1_000) return true;
     if (mpots < 1_000) return true;
     return false;
+  }
+
+  open_close_stand() {
+    if (this.working) {
+      close_stand();
+    } else {
+      open_stand();
+    }
   }
 
   async restock() {
