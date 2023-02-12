@@ -22,7 +22,7 @@ export async function RunFarmer() {
     } else {
       const dist = simple_distance(target,character);
       if(!is_moving(character) 
-          && dist > character.range - 10) {
+          && dist > character.range - 10 && Mover.stopped) {
         if(can_move_to(target.real_x,target.real_y)) {
           move((target.real_x + character.real_x) / 2, (target.real_y + character.real_y) / 2);
         } else {
@@ -31,7 +31,7 @@ export async function RunFarmer() {
         }
       }
     }
-  } else if(!is_moving(character)) {
+  } else if(!is_moving(character) && Mover.stopped) {
     set_message("Finding");
     Mover.move(<SmartMoveToDestination>mon_type);
   }

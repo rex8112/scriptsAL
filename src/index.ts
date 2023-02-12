@@ -72,7 +72,7 @@ if (character.ctype == "merchant") {
 }
 
 
-setInterval(async function(){
+/* setInterval(async function(){
   if (character.ctype == "merchant") {
     if (char === null) char = new MerchantCharacter(character);
     char.run();
@@ -81,7 +81,7 @@ setInterval(async function(){
     RunFarmer();
   }
 
-},1000/4); // Loops every 1/4 seconds.
+},1000/4); // Loops every 1/4 seconds. */
 
 setInterval(async () => {
   set(`${character.name}_pos`, {map: character.map, x: character.x, y: character.y})

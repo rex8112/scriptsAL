@@ -75,13 +75,13 @@ export class Mover {
 
   static _stopping: boolean = false;
 
-  static _stopped: boolean = true;
+  static stopped: boolean = true;
 
   static async stop() {
     Mover._stopping = true;
     stop("move");
 
-    while (!Mover._stopped)
+    while (!Mover.stopped)
       await sleep(100);
   }
 
@@ -102,7 +102,7 @@ export class Mover {
     }
     realPos.map = realPos.map || character.map;
 
-    if(character.map == realPos.map  && can_move_to(realPos.x, realPos.y))
+    if(character.map == realPos.map && can_move_to(realPos.x, realPos.y))
       return await Mover.moveX(realPos.x, realPos.y);
     else {
       await Mover.move_by_path(realPos);
@@ -112,20 +112,20 @@ export class Mover {
 
   static async move_by_path(destination: SmartMoveToDestination) {
     Mover._stopping = false;
-    Mover._stopped = false;
+    Mover.stopped = false;
     let data = await Mover.get_path({x: Math.round(character.x), y: Math.round(character.y), map: character.map}, destination);
 
     if (data == null || data.path ==  null) {
       Mover._log("Failed to get path: Invalid response: ", data);
       await Mover.smart_moveX(destination);
-      Mover._stopped = true;
+      Mover.stopped = true;
       return;
     }
     if(isErrorResponse(data))
     {
       Mover._log("Failed to get path: ", data.error);
       await Mover.smart_moveX(destination);
-      Mover._stopped = true;
+      Mover.stopped = true;
       return;
     }
 
@@ -142,7 +142,7 @@ export class Mover {
       if(character.dead || character.rip)
       {
         Mover.path = null;
-        Mover._stopped = true;
+        Mover.stopped = true;
         return;
       }
 
@@ -155,7 +155,7 @@ export class Mover {
           Mover._log("Failed to move to ", step);
           await Mover.smart_moveX(destination);
           Mover.path = null;
-          Mover._stopped = true;
+          Mover.stopped = true;
           return;
         }
       }
@@ -174,7 +174,7 @@ export class Mover {
     }
 
     Mover.path = null;
-    Mover._stopped = true;
+    Mover.stopped = true;
   }
 
   static async useTown()
