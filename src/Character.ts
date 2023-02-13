@@ -292,7 +292,7 @@ export class MerchantCharacter extends BaseCharacter {
       if (character.items[i]) {
         let item = character.items[i];
         let meta = G.items[item.name];
-        if (this.isUpgradable(item)) 
+        if (this.isUpgradable(item) && meta.grades) 
           items.push([i, meta.grades[0] - <number>item.level]);
       }
     }

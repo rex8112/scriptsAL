@@ -1,20 +1,27 @@
 import { BankPackTypeItemsOnly, CharacterBankInfos, ItemInfo, ItemKey, MapKey } from "typed-adventureland";
 import { BaseCharacter } from "./Character";
 
-export type BankPosition = [pack: BankPackTypeItemsOnly, pos: number, item: ItemInfo];
+export type BankPosition = [pack: BankPack, pos: number, item: ItemData];
+
+export interface ItemData extends ItemInfo {
+  bank_item: BankItem;
+}
 
 export class Bank {
   char: BaseCharacter;
   bank: CharacterBankInfos = <CharacterBankInfos>{};
   items: {[name: string]: BankItem} = {};
+  packs: {[name: string]: BankPack} = {};
   constructor(ch: BaseCharacter) {
     this.char = ch;
   }
 
-  async moveToPack(pack: BankPackTypeItemsOnly | "gold") {
+  async moveToPack(pack: BankPack | BankPackTypeItemsOnly | "gold") {
     let map: MapKey;
     if (pack === "gold") {
       map = "bank";
+    } else if (pack instanceof BankPack) {
+      map = bank_packs[pack.name][0];
     } else {
       map = bank_packs[pack][0];
     }
@@ -29,6 +36,7 @@ export class Bank {
   async updateInfo() {
     console.log("Updating Information");
     await this.moveToPack("items0");
+    await sleep(500);
     let bankInfo = <CharacterBankInfos>character.bank;
     this.bank = bankInfo;
     console.log("Building Items");
@@ -37,35 +45,28 @@ export class Bank {
   }
 
   buildItems() {
-    let items: {[name: string]: BankItem} = {};
+    let bank_items: {[name: string]: BankItem} = {};
     for (let pname in this.bank) {
-      let pack = this.bank[<BankPackTypeItemsOnly>pname];
-      for (let i in pack) {
-        let item = pack[i];
+      let pack = new BankPack(this, <BankPackTypeItemsOnly>pname);
+      let pack_data = this.bank[<BankPackTypeItemsOnly>pname];
+      for (let i in pack_data) {
+        let item = pack_data[i];
         if (item) {
-          if (items[item.name] === undefined)
-            items[item.name] = new BankItem(this, item.name);
-
-          items[item.name].addPosition([<BankPackTypeItemsOnly>pname, Number(i), item]);
+          this._addItemPosition(pack, Number(i), item);
         }
       }
     }
-    this.items = items;
+    this.items = bank_items;
   }
 
-  getFreeSlots(): {[pack in BankPackTypeItemsOnly]: number} {
-    let slots: {[pack in BankPackTypeItemsOnly]: number} = <{[pack in BankPackTypeItemsOnly]: number}>{};
+  _addItemPosition(pack: BankPack, pos: number, item: ItemInfo) {
+    if (this.items[item.name] === undefined)
+      this.items[item.name] = new BankItem(this, item.name);
 
-    for (let name in this.bank) {
-      let info = this.bank[<BankPackTypeItemsOnly>name];
-      let free = 42 - info.length;
-      for (let islot in info) {
-        let slot = info[islot];
-        if (slot === null) free += 1;
-      }
-      slots[<BankPackTypeItemsOnly>name] = free;
-    }
-    return slots;
+    let itemTemp: any = { ...item };
+    itemTemp.bank_item = this.items[item.name];
+
+    this.items[item.name].addPosition([pack, pos, <ItemData>itemTemp]);
   }
 
   findItems(filter: ((i: ItemInfo) => boolean)): BankPosition[] {
@@ -80,12 +81,18 @@ export class Bank {
   async _getItemFromPosition(pos: BankPosition, quantity: number = 0): Promise<number> {
     await this.moveToPack(pos[0]);
     if (quantity > 0 && quantity < (pos[2].q || 1)) {
-      await bank_retrieve(pos[0], pos[1], 41);
+      await bank_retrieve(pos[0].name, pos[1], 41);
       split(41, quantity);
-      await bank_store(41, pos[0], pos[1]);
+      await bank_store(41, pos[0].name, pos[1]);
+
+      if (pos[2].q) 
+        pos[2].q -= quantity;
+
       return quantity;
     }
-    await bank_retrieve(pos[0], pos[1]);
+    await bank_retrieve(pos[0].name, pos[1]);
+    this.items[pos[2].name].removePosition(pos);
+
     return pos[2].q || 1;
   }
 
@@ -103,26 +110,24 @@ export class Bank {
     let positions = this.findItems(filter);
     if (positions.length > 0) {
       await this._getItemFromPositions(positions);
-      await this.updateInfo();
     }
   }
 
   async storeItems(ipos: number[]) {
-    let freeSlots = this.getFreeSlots();
     let stored = 0;
     for (let pos of ipos) {
-      for (let name in freeSlots) {
-        let free = freeSlots[<BankPackTypeItemsOnly>name];
-        if (free > 0) {
-          await this.moveToPack(<BankPackTypeItemsOnly>name);
-          await bank_store(pos, <BankPackTypeItemsOnly>name);
-          freeSlots[<BankPackTypeItemsOnly>name]--;
+      for (let name in this.packs) {
+        let pack = this.packs[name];
+        let free = pack.getFreeSlot();
+        if (free !== null) {
+          await this.moveToPack(pack);
+          this._addItemPosition(pack, free, character.items[pos]);
+          await bank_store(pos, pack.name, free);
           stored++;
           break;
         }
       }
     }
-    await this.updateInfo();
     return stored;
   }
 
@@ -130,6 +135,53 @@ export class Bank {
     if (Object.keys(<object>this.bank).length > 0) 
       return false;
     return true;
+  }
+}
+
+class BankPack {
+  bank: Bank;
+  name: BankPackTypeItemsOnly;
+  items: (ItemData | null)[] = [];
+  size: number = 42;
+  constructor(bank: Bank, name: BankPackTypeItemsOnly) {
+    this.bank = bank;
+    this.name = name;
+
+    for (var i = 0; i < 42; i++) this.items.push(null);
+  }
+
+  _addItem(item: ItemData, pos: number): ItemData | null {
+    let current = this.items[pos];
+    this.items[pos] = item;
+    return current;
+  }
+
+  _removeItem(pos: number): ItemData | null {
+    let current = this.items[pos];
+    this.items[pos] = null;
+    return current;
+  }
+
+  /**
+   * Get a free slot in the pack.
+   * @returns The slot number that's free or null.
+   */
+  getFreeSlot(): number | null {
+    for (let i in this.items) {
+      let item = this.items[i];
+      if (item === null) return Number(i);
+    }
+    if (this.items.length > 42) return null;
+    return this.items.length;
+  }
+
+  getTotalFreeSlots(): number {
+    let total = 42 - this.items.length;
+    for (let i in this.items) {
+      if (this.items[i] === null) total++;
+    }
+
+    return total;
   }
 }
 
@@ -186,5 +238,18 @@ class BankItem {
 
   addPosition(position: BankPosition) {
     this.positions.push(position);
+    position[0]._addItem(position[2], position[1]);
+  }
+
+  removePosition(position: BankPosition): boolean {
+    for (let i in this.positions) {
+      let pos = this.positions[i];
+      if (pos[0].name === position[0].name && pos[1] === position[1]) {
+        this.positions.splice(Number(i), 1);
+        pos[0]._removeItem(pos[1]);
+        return true;
+      }
+    }
+    return false;
   }
 }
