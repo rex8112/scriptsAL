@@ -19,18 +19,21 @@ export class Bank {
       map = bank_packs[pack][0];
     }
     while (character.map !== map) {
+      console.log(character.map, map);
       await this.char.move(map);
+      console.log("Done Moving");
       await sleep(500);
     }
   }
 
   async updateInfo() {
-    if (character.map != "bank") {
-      await this.char.move("bank");
-    }
+    console.log("Updating Information");
+    await this.moveToPack("items0");
     let bankInfo = <CharacterBankInfos>character.bank;
     this.bank = bankInfo;
+    console.log("Building Items");
     this.buildItems();
+    console.log(this.bank);
   }
 
   buildItems() {
