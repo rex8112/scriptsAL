@@ -18,8 +18,9 @@ export class Bank {
     } else {
       map = bank_packs[pack][0];
     }
-    if (character.map !== map) {
+    while (character.map !== map) {
       await this.char.move(map);
+      await sleep(500);
     }
   }
 
