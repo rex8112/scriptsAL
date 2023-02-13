@@ -1,9 +1,10 @@
-import { ClassKey, IPosition, ItemInfo, ItemKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
+import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, IPosition, ItemInfo, ItemKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
 import { LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
 import { getItemPosition, getItemQuantity } from "./Utils";
+import { Bank } from "./Bank";
 
 
 export class BaseCharacter {
@@ -12,12 +13,14 @@ export class BaseCharacter {
   name: string;
   CM: CharacterMessager;
   working: boolean = false;
+  bank: Bank;
 
   constructor(ch: Character) {
     this.original = ch;
     this.class = ch.ctype;
     this.name = ch.name;
     this.CM = new CharacterMessager();
+    this.bank = new Bank(this);
   }
 
   async run() {}
@@ -75,15 +78,22 @@ export class MerchantCharacter extends BaseCharacter {
     if (this.potionUseTask === null)
       this.potionUseTask = setInterval(use_hp_or_mp, 250);
     if (this.standTask === null)
-      this.standTask = setInterval(this.open_close_stand.bind(this), 250);
+      this.standTask = setInterval(this.open_close_stand.bind(this), 150);
     if (this.inspectMerchantTask === null)
       this.inspectMerchantTask = setInterval(this.inspectNearbyMerchants.bind(this), 5_000);
   }
 
   async run() {
+    if (this.bank.noInfo()) await this.bank.updateInfo();
+
     if (this.getCompoundableItems().length > 0) await this.compoundItems();
-    if (this.getUpgradableItems().length > 0) await this.upgradeItems();
+
+    if (this.getUpgradableItems().length > 0 
+        || this.getUpgradableItemsInBank().length > 0)
+      await this.upgradeItems();
+
     if (this.needRestock()) await this.restock();
+
     if (this.needFarmerRun()) await this.farmerRun();
 
     setTimeout(this.run.bind(this), 1_000);
@@ -98,11 +108,22 @@ export class MerchantCharacter extends BaseCharacter {
   }
 
   open_close_stand() {
-    if (is_moving(character)) {
+    if (is_moving(character) && character.standed) {
       close_stand();
-    } else {
+    } else if (!is_moving(character) && !character.standed) {
       open_stand();
     }
+  }
+
+  async storeLoot() {
+    let pos: number[] = [];
+    for (let i in character.items) {
+      let item = character.items[i];
+      if (item && MerchantCharacter.itemsToTake.includes(item.name)) {
+        pos.push(Number(i));
+      }
+    }
+    await this.bank.storeItems(pos);
   }
 
   async restock() {
@@ -119,12 +140,12 @@ export class MerchantCharacter extends BaseCharacter {
     for (var name in characterCopy) {
       var char = characterCopy[name];
       if (name == character.name || !Object.keys(this.characterInfo).includes(name)) continue;
-      set_message("Restocking")
+      set_message("Restocking");
       let position = get_position(char);
       while (simple_distance(character, position) > 100) {
         position = get_position(char);
         await this.move(position);
-        game_log("Move Finished")
+        game_log("Move Finished");
         await sleep(150);
       }
       let promises = [];
@@ -145,17 +166,25 @@ export class MerchantCharacter extends BaseCharacter {
       await Promise.all(promises);
     }
     await this.updateCharacterInfo();
+    await this.storeLoot();
   }
 
   async upgradeItems() {
     var totalAttempts = 0;
+    await this.bank.getItems(this.isUpgradable);
     var items = this.getUpgradableItems();
     for (var i in items) totalAttempts += items[i][1];
     var scrolls = getItemQuantity("scroll0", character.items, character.isize);
     if (scrolls < totalAttempts) {
       set_message("Restocking");
-      await this.move("scrolls");
-      buy("scroll0", totalAttempts - scrolls);
+      let grabbed = 0;
+      if (this.bank.items["scroll0"]) {
+        grabbed += await this.bank.items["scroll0"].getItem(totalAttempts - scrolls);
+      }
+      if (scrolls + grabbed < totalAttempts) {
+        await this.move("scrolls");
+        buy("scroll0", totalAttempts - scrolls);
+      }
     }
     await this.move("upgrade");
     set_message("Upgrading");
@@ -185,6 +214,50 @@ export class MerchantCharacter extends BaseCharacter {
     }
   }
 
+  /* async sortBank() {
+    if (this.bank === null) return;
+    console.log("Building index");
+    var items: {[name in ItemKey]: [BankPackTypeItemsOnly, number, number][]} = {};
+    for (var pack in this.bank) {
+      let bank = this.bank[<BankPackTypeItemsOnly>pack];
+      for (var i in bank) {
+        var item = bank[i];
+        if (item === null) continue;
+
+        if (items[item.name]) {
+          items[item.name].push([<BankPackTypeItemsOnly>pack, Number(i), item.q || 1]);
+        } else {
+          items[item.name] = [[<BankPackTypeItemsOnly>pack, Number(i), item.q || 1]];
+        }
+      }
+    }
+
+    await this.move("bank");
+
+    console.log("Beginning Sort", items);
+    for (var name in items) {
+      let item = items[name];
+      if (G.items[name].s > 1 && item.length > 1) {
+        let first = item[0];
+        let rest = item.splice(1);
+        for (let i = rest.length - 1; i >= 0; i--) {
+          console.log("Sorting");
+          let int = rest[i];
+          let res: any = await bank_retrieve(int[0], int[1], 41);
+          if (res.success) {
+            await bank_store(41, first[0]);
+          } else {
+            await bank_store(41, int[0], int[1]);
+          }
+        }
+      }
+    }
+
+    console.log("Sort Finished");
+    this.sorted = true;
+    await this.updateBankInfo();
+  } */
+
   needFarmerRun(): boolean {
     var go = false;
     for (var name in this.characterInfo) {
@@ -197,6 +270,18 @@ export class MerchantCharacter extends BaseCharacter {
     return go;
   }
 
+  isUpgradable(item: ItemInfo): boolean {
+    let meta = G.items[item.name];
+    if (meta.grades && meta.grades[0] > 0) {
+      if (meta.upgrade && meta.grades[0] > <number>item.level) return true;
+    }
+    return false;
+  }
+
+  getUpgradableItemsInBank() {
+    return this.bank.findItems(this.isUpgradable);
+  }
+
   /**
    * 
    * @returns Returns an array of number pairs: [islot, times_to_upgrade]
@@ -207,12 +292,10 @@ export class MerchantCharacter extends BaseCharacter {
       if (character.items[i]) {
         let item = character.items[i];
         let meta = G.items[item.name];
-        if (meta.grades && meta.grades[0] > 0) {
-          if (meta.upgrade && meta.grades[0] > <number>item.level) items.push([i, meta.grades[0] - <number>item.level]);
-        }
+        if (this.isUpgradable(item)) 
+          items.push([i, meta.grades[0] - <number>item.level]);
       }
     }
-
     return items;
   }
 
