@@ -43,6 +43,10 @@ export class Bank {
     await this.moveToPack("items0");
     await sleep(500);
     let bankInfo = <CharacterBankInfos>character.bank;
+    if (bankInfo === null) {
+      await this.updateInfo();
+      return;
+    }
     this.bank = bankInfo;
     this.gold = bankInfo?.gold || 0;
     console.log("Building Items");
