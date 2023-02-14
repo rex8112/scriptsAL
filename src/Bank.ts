@@ -16,6 +16,10 @@ export class Bank {
     this.char = ch;
   }
 
+  /**
+   * Go the the map that contains the bank pack.
+   * @param pack The pack to go to.
+   */
   async moveToPack(pack: BankPack | BankPackTypeItemsOnly | "gold") {
     let map: MapKey;
     if (pack === "gold") {
@@ -103,6 +107,12 @@ export class Bank {
     return pos[2].q || 1;
   }
 
+  /**
+   * Get items from an array of BankPositions
+   * @param positions An array of BankPosition to grab from.
+   * @param quantity The total quantity of items to grab. 0 disables.
+   * @returns Returns the quantity grabbed.
+   */
   async getItemFromPositions(positions: BankPosition[], quantity: number = 0) {
     let grabbed = 0;
     for (var i in positions) {
@@ -113,6 +123,11 @@ export class Bank {
     return grabbed;
   }
 
+  /**
+   * Gets all items that match the filter from the bank. For quantity support 
+   * use `Bank.items["itemname"].getItem(quantity, filter?)`.
+   * @param filter The filter that determines if an item should be grabbed.
+   */
   async getItems(filter: ((i: ItemInfo) => boolean)) {
     let positions = this.findItems(filter);
     if (positions.length > 0) {
@@ -120,7 +135,12 @@ export class Bank {
     }
   }
 
-  async storeItems(ipos: number[]) {
+  /**
+   * Store items into the bank.
+   * @param ipos An array of inventory positions to store.
+   * @returns The amount of stacks stored. Should be the same as ipos.length if everything worked.
+   */
+  async storeItems(ipos: number[]): Promise<number> {
     let stored = 0;
     for (let pos of ipos) {
       let item = character.items[pos];
@@ -137,6 +157,7 @@ export class Bank {
         for (let i in spots) {
           let spot = spots[i];
           if (<number>meta.s - <number>spot[2].q >= item.q) {
+            // By pulling this item into the character inventory, we will cause it to stack the items.
             await this._getItemFromPosition(spot);
             item = character.items[pos];
             break;
@@ -204,6 +225,10 @@ class BankPack {
     return this.items.length;
   }
 
+  /**
+   * Gets the total amount of slots that are empty.
+   * @returns The total number of slots available.
+   */
   getTotalFreeSlots(): number {
     let total = 42 - this.items.length;
     for (let i in this.items) {
@@ -224,6 +249,11 @@ class BankItem {
     this.name = name;
   }
 
+  /**
+   * Find all the positions of the items. Optionally filtered.
+   * @param filter Filters the results
+   * @returns An array of BankPosition of the item.
+   */
   findItem(filter: ((i: ItemInfo) => boolean) | null = null): BankPosition[] {
     let positions: BankPosition[] = [];
 
@@ -243,6 +273,12 @@ class BankItem {
     return positions;
   }
 
+  /**
+   * Gets one or more of the item that fits the filter.
+   * @param quantity Quantity of the item to grab. Defaults to 1.
+   * @param filter A filter of the items to grab. Defaults to null.
+   * @returns Returns quantity grabbed.
+   */
   async getItem(quantity: number = 1, filter: ((i: ItemInfo) => boolean) | null = null) {
     if (character.map !== "bank")
       await this.bank.char.move("bank");
