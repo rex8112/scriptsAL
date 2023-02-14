@@ -16,9 +16,13 @@ export interface LocalChacterInfo {
   items: ItemInfo[];
   isize: number;
   time: Date;
+  party: string | null;
 }
 
-export type CMTask = CMRequestInfo | CMRequestInfoReply | CMRequestItems | CMRequestItemsReply | CMRequestGold | CMRequestGoldReply;
+export type CMTask = CMRequestInfo | CMRequestInfoReply | CMRequestItems 
+                      | CMRequestItemsReply | CMRequestGold | CMRequestGoldReply 
+                      | CMRequestPartyAccept | CMRequestPartyAcceptReply | CMRequestLeaveParty
+                      | CMRequestLeavePartyReply;
 
 export interface CMRequestInfo {
   task: "request_info";
@@ -47,5 +51,25 @@ export interface CMRequestGold {
 
 export interface CMRequestGoldReply {
   task: "request_gold_reply";
+  data: boolean;
+}
+
+export interface CMRequestPartyAccept {
+  task: "request_party_accept";
+  data: string;
+}
+
+export interface CMRequestPartyAcceptReply {
+  task: "request_party_accept_reply";
+  data: boolean;
+}
+
+export interface CMRequestLeaveParty {
+  task: "request_leave_party";
+  data: null;
+}
+
+export interface CMRequestLeavePartyReply {
+  task: "request_leave_party_reply";
   data: boolean;
 }

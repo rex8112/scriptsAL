@@ -382,6 +382,21 @@ export class MerchantCharacter extends BaseCharacter {
   async updateCharacterInfo() {
     var cData = await this.CM.gatherAllCharacterInfo();
     this.characterInfo = cData;
+    for (let name in cData) {
+      let char = cData[name];
+      let invite = false;
+      if (char.party === null) {
+        invite = true;
+      } else if (char.party !== character.name) {
+        invite = true;
+        await this.CM.requestLeaveParty(char.name);
+      }
+
+      if (invite) {
+        send_party_invite(name);
+        this.CM.requestPartyAccept(name);
+      }
+    }
   }
 
   inspectNearbyMerchants() {

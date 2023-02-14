@@ -1,5 +1,5 @@
 import { CMRequests, Request } from "./CMRequests";
-import { CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMTask, LocalChacterInfo } from "./Types";
+import { CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMTask, LocalChacterInfo } from "./Types";
 
 export class CharacterMessager {
   cmr: CMRequests;
@@ -14,6 +14,10 @@ export class CharacterMessager {
       this.requestItemsReceived(<Request<CMRequestItems>>message);
     } else if (message.message.task === "request_gold") {
       this.requestGoldReceived(<Request<CMRequestGold>>message);
+    } else if (message.message.task === "request_party_accept") {
+      this.requestPartyAcceptReceived(<Request<CMRequestPartyAccept>>message);
+    } else if (message.message.task === "request_leave_party") {
+      this.requestLeavePartyReceived(<Request<CMRequestLeaveParty>>message);
     } else {
       message.respond({status: 400, message: `Invalid Request: ${message.message?.task} not recognized.`});
     }
@@ -50,6 +54,7 @@ export class CharacterMessager {
       slots: character.slots,
       items: character.items,
       isize: character.isize,
+      party: character.party || null,
       time: new Date()
     };
 
@@ -107,7 +112,6 @@ export class CharacterMessager {
     if (resp.status == 200) {
       return <CMRequestGoldReply>resp.message;
     }
-    game_log("Gold Timed Out")
     return null;
   }
 
@@ -115,6 +119,49 @@ export class CharacterMessager {
     var target = request.from;
     try {
       send_gold(target, request.message.data);
+      request.respondOK(true);
+    } catch {
+      request.respondOK(false);
+    }
+  }
+
+  async requestPartyAccept(name: string) {
+    var request: CMRequestPartyAccept = {
+      task: "request_party_accept",
+      data: character.name
+    }
+    var resp = await this.cmr.request(name, request, 5_000);
+    if (resp.status == 200) {
+      return <CMRequestPartyAcceptReply>resp.message;
+    }
+    return null;
+  }
+
+  requestPartyAcceptReceived(request: Request<CMRequestPartyAccept>) {
+    var target = request.message.data;
+    try {
+      accept_party_invite(target);
+      request.respondOK(true);
+    } catch {
+      request.respondOK(false);
+    }
+  }
+
+  async requestLeaveParty(name: string) {
+    var request: CMRequestLeaveParty = {
+      task: "request_leave_party",
+      data: null
+    }
+    var resp = await this.cmr.request(name, request, 5_000);
+    if (resp.status == 200) {
+      return <CMRequestLeavePartyReply>resp.message;
+    }
+    return null;
+  }
+
+  requestLeavePartyReceived(request: Request<CMRequestLeaveParty>) {
+    try {
+      leave_party();
       request.respondOK(true);
     } catch {
       request.respondOK(false);
