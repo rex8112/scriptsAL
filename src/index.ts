@@ -65,7 +65,6 @@ var globalAny: any = globalThis;
 if (character.ctype == "merchant") {
   if (char === null) char = new MerchantCharacter(character);
   char.run();
-  globalAny.character = char;
 } else {
   setInterval(async () => {
     if (char === null) char = new BaseCharacter(character);

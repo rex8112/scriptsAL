@@ -6,6 +6,7 @@ import { CharacterMessager } from "./CharacterMessager";
 import { getItemPosition, getItemQuantity } from "./Utils";
 import { Bank } from "./Bank";
 
+var globalAny: any = globalThis;
 
 export class BaseCharacter {
   original: Character;
@@ -21,6 +22,7 @@ export class BaseCharacter {
     this.name = ch.name;
     this.CM = new CharacterMessager();
     this.bank = new Bank(this);
+    globalAny.char = this;
   }
 
   async run() {}
@@ -65,6 +67,7 @@ export class MerchantCharacter extends BaseCharacter {
   potionUseTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
+  deposit: number[] = [];
 
   constructor(ch: Character) {
     super(ch);
@@ -95,6 +98,12 @@ export class MerchantCharacter extends BaseCharacter {
     if (this.needRestock()) await this.restock();
 
     if (this.needFarmerRun()) await this.farmerRun();
+
+    if (this.deposit.length > 0) {
+      await this.bank.storeItems(this.deposit);
+      game_log("Deposited");
+      this.deposit = [];
+    }
 
     setTimeout(this.run.bind(this), 1_000);
   }

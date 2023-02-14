@@ -45,18 +45,19 @@ export class Bank {
   }
 
   buildItems() {
-    let bank_items: {[name: string]: BankItem} = {};
+    this.items = {};
     for (let pname in this.bank) {
       let pack = new BankPack(this, <BankPackTypeItemsOnly>pname);
+      this.packs[pack.name] = pack;
       let pack_data = this.bank[<BankPackTypeItemsOnly>pname];
       for (let i in pack_data) {
         let item = pack_data[i];
-        if (item) {
+        if (item !== null) {
+          console.log("Adding: ", item.name);
           this._addItemPosition(pack, Number(i), item);
         }
       }
     }
-    this.items = bank_items;
   }
 
   _addItemPosition(pack: BankPack, pos: number, item: ItemInfo) {
@@ -78,6 +79,12 @@ export class Bank {
     return positions;
   }
 
+  /**
+   * 
+   * @param pos The BankPosition of the item
+   * @param quantity The amount of items to fetch, leave blank for entire stack.
+   * @returns The quantity of items grabbed.
+   */
   async _getItemFromPosition(pos: BankPosition, quantity: number = 0): Promise<number> {
     await this.moveToPack(pos[0]);
     if (quantity > 0 && quantity < (pos[2].q || 1)) {
@@ -116,12 +123,30 @@ export class Bank {
   async storeItems(ipos: number[]) {
     let stored = 0;
     for (let pos of ipos) {
+      let item = character.items[pos];
+
+      // If the item is stackable AND this item already has a BankItem associated with it.
+      if (item.q !== undefined && this.items[item.name]) {
+        let cont = false;
+        let meta = G.items[item.name];
+        let spots = this.items[item.name].findItem();
+        for (let i in spots) {
+          let spot = spots[i];
+          if (<number>meta.s - <number>spot[2].q >= item.q) {
+            await this._getItemFromPosition(spot);
+            item = character.items[pos];
+            break;
+          }
+        }
+      }
+
+
       for (let name in this.packs) {
         let pack = this.packs[name];
         let free = pack.getFreeSlot();
         if (free !== null) {
           await this.moveToPack(pack);
-          this._addItemPosition(pack, free, character.items[pos]);
+          this._addItemPosition(pack, free, item);
           await bank_store(pos, pack.name, free);
           stored++;
           break;
@@ -219,7 +244,6 @@ class BankItem {
       await this.bank.char.move("bank");
     let positions = this.findItem(filter);
     let grabbed = await this.bank._getItemFromPositions(positions, quantity);
-    await this.bank.updateInfo();
     return grabbed;
   }
 
