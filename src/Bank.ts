@@ -103,7 +103,7 @@ export class Bank {
     return pos[2].q || 1;
   }
 
-  async _getItemFromPositions(positions: BankPosition[], quantity: number = 0) {
+  async getItemFromPositions(positions: BankPosition[], quantity: number = 0) {
     let grabbed = 0;
     for (var i in positions) {
       let pos = positions[i];
@@ -116,7 +116,7 @@ export class Bank {
   async getItems(filter: ((i: ItemInfo) => boolean)) {
     let positions = this.findItems(filter);
     if (positions.length > 0) {
-      await this._getItemFromPositions(positions);
+      await this.getItemFromPositions(positions);
     }
   }
 
@@ -124,6 +124,10 @@ export class Bank {
     let stored = 0;
     for (let pos of ipos) {
       let item = character.items[pos];
+      if (item === undefined) {
+        console.log("Can't store undefined: ", pos);
+        continue;
+      }
 
       // If the item is stackable AND this item already has a BankItem associated with it.
       if (item.q !== undefined && this.items[item.name]) {
@@ -243,7 +247,7 @@ class BankItem {
     if (character.map !== "bank")
       await this.bank.char.move("bank");
     let positions = this.findItem(filter);
-    let grabbed = await this.bank._getItemFromPositions(positions, quantity);
+    let grabbed = await this.bank.getItemFromPositions(positions, quantity);
     return grabbed;
   }
 

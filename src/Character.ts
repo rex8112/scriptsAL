@@ -4,7 +4,7 @@ import { CMRequests } from "./CMRequests";
 import { LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
 import { getItemPosition, getItemQuantity } from "./Utils";
-import { Bank } from "./Bank";
+import { Bank, BankPosition } from "./Bank";
 
 var globalAny: any = globalThis;
 
@@ -67,7 +67,6 @@ export class MerchantCharacter extends BaseCharacter {
   potionUseTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
-  deposit: number[] = [];
 
   constructor(ch: Character) {
     super(ch);
@@ -89,7 +88,7 @@ export class MerchantCharacter extends BaseCharacter {
   async run() {
     if (this.bank.noInfo()) await this.bank.updateInfo();
 
-    if (this.getCompoundableItems().length > 0) await this.compoundItems();
+    if (this.getCompoundableItemsFromBank().length > 0) await this.compoundItems();
 
     if (this.getUpgradableItems().length > 0 
         || this.getUpgradableItemsInBank().length > 0)
@@ -98,12 +97,6 @@ export class MerchantCharacter extends BaseCharacter {
     if (this.needRestock()) await this.restock();
 
     if (this.needFarmerRun()) await this.farmerRun();
-
-    if (this.deposit.length > 0) {
-      await this.bank.storeItems(this.deposit);
-      game_log("Deposited");
-      this.deposit = [];
-    }
 
     setTimeout(this.run.bind(this), 1_000);
   }
@@ -124,11 +117,12 @@ export class MerchantCharacter extends BaseCharacter {
     }
   }
 
-  async storeLoot() {
+  async cleanInventory() {
+    let keep = ["hpot0", "mpot0", "stand0"]
     let pos: number[] = [];
     for (let i in character.items) {
       let item = character.items[i];
-      if (item && MerchantCharacter.itemsToTake.includes(item.name)) {
+      if (item && !keep.includes(item.name)) {
         pos.push(Number(i));
       }
     }
@@ -175,7 +169,7 @@ export class MerchantCharacter extends BaseCharacter {
       await Promise.all(promises);
     }
     await this.updateCharacterInfo();
-    await this.storeLoot();
+    await this.cleanInventory();
   }
 
   async upgradeItems() {
@@ -197,17 +191,42 @@ export class MerchantCharacter extends BaseCharacter {
     }
     await this.move("upgrade");
     set_message("Upgrading");
+    let returnItems = [];
     for (var i in items) {
       let pair = items[i];
+      let lastResult;
       for (var y = 0; y < pair[1]; y++) {
-        let results = await upgrade(pair[0], <number>getItemPosition("scroll0", character.items, character.isize));
-        if (results.success === false) break;
+        lastResult = await upgrade(pair[0], <number>getItemPosition("scroll0", character.items, character.isize));
+        if (lastResult.success === false) break;
+      }
+      if (lastResult?.success) {
+        returnItems.push(lastResult.num);
       }
     }
+    if (returnItems.length > 0)
+      await this.bank.storeItems(returnItems);
+    await this.cleanInventory();
   }
 
   async compoundItems() {
-    var items = this.getCompoundableItems();
+    var positions = this.getCompoundableItemsFromBank();
+    let items: [number, number, number][] = [];
+    let lastInv = 0;
+    for (let i in positions) {
+      let pos = positions[i];
+      await this.bank.getItemFromPositions(pos);
+      let compItems = [];
+      while (true) {
+        if (lastInv > 41 || compItems.length >= 3) break;
+
+        let item = character.items[lastInv];
+        if (item.name === pos[0][2].name && item.level === pos[0][2].level) {
+          compItems.push(lastInv);
+        }
+        lastInv++;
+      }
+      items.push(<[number, number, number]>compItems);
+    }
     var totalAttempts = items.length;
     var scrolls = getItemQuantity("cscroll0", character.items, character.isize);
     if (scrolls < totalAttempts) {
@@ -217,10 +236,17 @@ export class MerchantCharacter extends BaseCharacter {
     }
     await this.move("compound");
     set_message("Compounding");
+    let returnItems = [];
     for (var i in items) {
       let pos = items[i];
-      let result = await compound(pos[0], pos[1], pos[2], <number>getItemPosition("cscroll0", character.items, character.isize))
+      let result = await compound(pos[0], pos[1], pos[2], <number>getItemPosition("cscroll0", character.items, character.isize));
+      if (result.success) {
+        returnItems.push(result.num);
+      }
     }
+    if (returnItems.length > 0)
+      await this.bank.storeItems(returnItems);
+    await this.cleanInventory();
   }
 
   /* async sortBank() {
@@ -308,24 +334,25 @@ export class MerchantCharacter extends BaseCharacter {
     return items;
   }
 
-  getCompoundableItems(): [number, number, number][] {
-    var items: {[name: string]: number[]} = {};
-    for (let i = 0; i < character.isize; i++) {
-      if (character.items[i]) {
-        let item = character.items[i];
-        let meta = G.items[item.name];
-        if (meta.grades && (meta.grades[0] < 1 || meta.grades[0] < <number>item.level)) continue;
-        if (meta.compound) {
-          let name = `${item.name}${item.level}`;
-          if (items[name] === undefined)
-            items[name] = [i];
-          else
-            items[name].push(i);
-        }
-      }
+  getCompoundableItemsFromBank(): [BankPosition, BankPosition, BankPosition][] {
+    let positions = this.bank.findItems((item) => {
+      let meta = G.items[item.name];
+      if (meta.grades && (meta.grades[0] < 1 || meta.grades[0] < <number>item.level)) return false;
+      if (meta.compound) return true;
+      return false;
+    })
+    var items: {[name: string]: BankPosition[]} = {};
+    for (let i in positions) {
+      let pos = positions[i];
+      let item = pos[2];
+      let name = `${item.name}${item.level}`;
+      if (items[name] === undefined)
+        items[name] = [pos];
+      else
+        items[name].push(pos);
     }
 
-    let pos: [number, number, number][] = [];
+    let pos: [BankPosition, BankPosition, BankPosition][] = [];
     for (var name in items) {
       let positions = items[name];
       if (positions.length < 3) continue;
