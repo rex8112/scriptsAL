@@ -10,6 +10,7 @@ export interface ItemData extends ItemInfo {
 export class Bank {
   char: BaseCharacter;
   bank: CharacterBankInfos = <CharacterBankInfos>{};
+  gold: number = 0;
   items: {[name: string]: BankItem} = {};
   packs: {[name: string]: BankPack} = {};
   constructor(ch: BaseCharacter) {
@@ -43,6 +44,7 @@ export class Bank {
     await sleep(500);
     let bankInfo = <CharacterBankInfos>character.bank;
     this.bank = bankInfo;
+    this.gold = bankInfo?.gold || 0;
     console.log("Building Items");
     this.buildItems();
     console.log(this.bank);
@@ -72,6 +74,32 @@ export class Bank {
     itemTemp.bank_item = this.items[item.name];
 
     this.items[item.name].addPosition([pack, pos, <ItemData>itemTemp]);
+  }
+
+  async depositGold(amount: number): Promise<void> {
+    let amt = amount;
+    if (amt > character.gold) {
+      amt = character.gold;
+    } else if (amt < 1) {
+      amt = 1;
+    }
+
+    await this.moveToPack("gold");
+    bank_deposit(amt);
+    this.gold += amt;
+  }
+
+  async withdrawGold(amount: number): Promise<void> {
+    let amt = amount;
+    if (amt > this.gold) {
+      amt = this.gold;
+    } else if (amt < 1) {
+      amt = 1;
+    }
+
+    await this.moveToPack("gold");
+    bank_withdraw(amt);
+    this.gold -= amt;
   }
 
   findItems(filter: ((i: ItemInfo) => boolean)): BankPosition[] {

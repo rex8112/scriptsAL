@@ -126,7 +126,12 @@ export class MerchantCharacter extends BaseCharacter {
         pos.push(Number(i));
       }
     }
+
     await this.bank.storeItems(pos);
+
+    if (character.gold > 2_000_000) {
+      await this.bank.depositGold(character.gold - 2_000_000);
+    }
   }
 
   async restock() {
