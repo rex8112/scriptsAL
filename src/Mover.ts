@@ -57,7 +57,8 @@ export class Mover {
       compound:   {x: -204, y: -129, map: "main"},
       exchange:   {x: -26, y: -432, map: "main"},
       potions:    {x: 56, y: -122, map: "main"},
-      scrolls:    {x: -465, y: -71, map: "main"}
+      scrolls:    {x: -465, y: -71, map: "main"},
+      town:       {x: -97, y: -87, map: "main"}
     },
     halloween: {
       potions:    {x: 149, y: -182, map: "halloween"}
