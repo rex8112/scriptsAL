@@ -19,6 +19,8 @@ interface PathActionTown {
 
 type PathAction = PathActionMove | PathActionTeleport | PathActionTown;
 
+type MoverDesitination = SmartMoveToDestination | "market";
+
 interface FetchPathResponse {
   path: PathAction[];
   time: number;
@@ -58,7 +60,7 @@ export class Mover {
       exchange:   {x: -26, y: -432, map: "main"},
       potions:    {x: 56, y: -122, map: "main"},
       scrolls:    {x: -465, y: -71, map: "main"},
-      town:       {x: -97, y: -87, map: "main"}
+      market:     {x: -97, y: -87, map: "main"}
     },
     halloween: {
       potions:    {x: 149, y: -182, map: "halloween"}
@@ -88,7 +90,7 @@ export class Mover {
 
   static async move(destination: IPosition | string) {
     if (is_string(destination)) {
-      await Mover.move_by_path(<SmartMoveToDestination>destination);
+      await Mover.move_by_path(<MoverDesitination>destination);
       return true;
     }
 
@@ -111,21 +113,23 @@ export class Mover {
     }
   }
 
-  static async move_by_path(destination: SmartMoveToDestination) {
+  static async move_by_path(destination: MoverDesitination) {
     Mover._stopping = false;
     Mover.stopped = false;
     let data = await Mover.get_path({x: Math.round(character.x), y: Math.round(character.y), map: character.map}, destination);
 
     if (data == null || data.path ==  null) {
       Mover._log("Failed to get path: Invalid response: ", data);
-      await Mover.smart_moveX(destination);
+      let retryPos = Mover.get_coord(destination);
+      if (retryPos) await Mover.smart_moveX(retryPos);
       Mover.stopped = true;
       return;
     }
     if(isErrorResponse(data))
     {
       Mover._log("Failed to get path: ", data.error);
-      await Mover.smart_moveX(destination);
+      let retryPos = Mover.get_coord(destination);
+      if (retryPos) await Mover.smart_moveX(retryPos);
       Mover.stopped = true;
       return;
     }
@@ -154,7 +158,8 @@ export class Mover {
         if(!moved)
         {
           Mover._log("Failed to move to ", step);
-          await Mover.smart_moveX(destination);
+          let retryPos = Mover.get_coord(destination);
+          if (retryPos) await Mover.smart_moveX(retryPos);
           Mover.path = null;
           Mover.stopped = true;
           return;
@@ -199,6 +204,16 @@ export class Mover {
     while(is_transporting(character))
       await sleep(500);
     await sleep(250);
+  }
+
+  static get_coord(destination: MoverDesitination): IPosition | null {
+    let endPos;
+    if (isIPosition(destination)) {
+      endPos = {x: Math.round(destination.x), y: Math.round(destination.y), map: destination.map || character.map};
+    } else {
+      endPos = Mover.find_coords(destination);
+    }
+    return endPos
   }
 
   static find_coords(destination: string): IPosition | null {
@@ -248,15 +263,11 @@ export class Mover {
     return endPos;
   }
 
-  static async get_path(start: IPosition, destination: SmartMoveToDestination): Promise<FetchPathResponse | ErrorResponse> {
+  static async get_path(start: IPosition, destination: MoverDesitination): Promise<FetchPathResponse | ErrorResponse> {
     let startPos = start;
     let endPos = null;
 
-    if (isIPosition(destination)) {
-      endPos = {x: Math.round(destination.x), y: Math.round(destination.y), map: destination.map || character.map};
-    } else {
-      endPos = Mover.find_coords(destination);
-    }
+    endPos = Mover.get_coord(destination);
 
     if (!endPos) return {error: "Unrecognized location"};
 

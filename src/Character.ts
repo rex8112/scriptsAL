@@ -46,7 +46,7 @@ export class BaseCharacter {
    * @param dest Destination to move character.
    * @returns The promise returned by Mover.move().
    */
-  move(dest: SmartMoveToDestination) {
+  move(dest: IPosition | string) {
     return Mover.move(dest);
   }
 
@@ -190,11 +190,11 @@ export class MerchantCharacter extends BaseCharacter {
         grabbed += await this.bank.items["scroll0"].getItem(totalAttempts - scrolls);
       }
       if (scrolls + grabbed < totalAttempts) {
-        await this.move("scrolls");
+        await this.move("market");
         buy("scroll0", totalAttempts - scrolls);
       }
     }
-    await this.move("upgrade");
+    await this.move("market");
     set_message("Upgrading");
     let returnItems = [];
     for (var i in items) {
@@ -236,10 +236,10 @@ export class MerchantCharacter extends BaseCharacter {
     var scrolls = getItemQuantity("cscroll0", character.items, character.isize);
     if (scrolls < totalAttempts) {
       set_message("Restocking");
-      await this.move("scrolls");
+      await this.move("market");
       buy("cscroll0", totalAttempts - scrolls);
     }
-    await this.move("compound");
+    await this.move("market");
     set_message("Compounding");
     let returnItems = [];
     for (var i in items) {
