@@ -1,13 +1,13 @@
 import { BaseCharacter } from "./Character";
 
-interface Task {
+export interface Task {
   name: string;
   displayName: string;
   id: number;
   priority: number;
   background: boolean;
   paused: boolean | null;
-  cancellable: false;
+  cancellable: boolean;
 
   canPause(): boolean;
   initialize(id: number): void;
@@ -36,6 +36,7 @@ export class TaskController {
 
     let task_to_run = v_tasks[0];
 
+    set_message(task_to_run.displayName);
     await task_to_run.run();
 
     delete this.tasks[task_to_run.id];

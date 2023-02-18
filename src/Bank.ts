@@ -122,6 +122,10 @@ export class Bank {
    * @returns The quantity of items grabbed.
    */
   async _getItemFromPosition(pos: BankPosition, quantity: number = 0): Promise<number> {
+    if (pos[1] > 41 || pos[1] < 0) {
+      console.log(`${pos[1]} is outside of allowed range!`);
+      return 0;
+    }
     await this.moveToPack(pos[0]);
     if (quantity > 0 && quantity < (pos[2].q || 1)) {
       await bank_retrieve(pos[0].name, pos[1], 41);
@@ -317,6 +321,18 @@ class BankItem {
     let positions = this.findItem(filter);
     let grabbed = await this.bank.getItemFromPositions(positions, quantity);
     return grabbed;
+  }
+
+  getTotal(filter: ((i: ItemInfo) => boolean) | null = null): number {
+    let total = 0;
+    let positions = this.findItem(filter);
+    
+    for (var i in positions) {
+      let pos = positions[i];
+      total += pos[2].q || 1;
+    }
+
+    return total;
   }
 
   hasItem(item: ItemInfo): boolean {

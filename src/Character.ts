@@ -225,7 +225,7 @@ export class MerchantCharacter extends BaseCharacter {
         if (lastInv > 41 || compItems.length >= 3) break;
 
         let item = character.items[lastInv];
-        if (item.name === pos[0][2].name && item.level === pos[0][2].level) {
+        if (item && item.name === pos[0][2].name && item.level === pos[0][2].level) {
           compItems.push(lastInv);
         }
         lastInv++;
@@ -246,12 +246,11 @@ export class MerchantCharacter extends BaseCharacter {
       let pos = items[i];
       let result = await compound(pos[0], pos[1], pos[2], <number>getItemPosition("cscroll0", character.items, character.isize));
       if (result.success) {
-        returnItems.push(result.num);
+        returnItems.push(Math.min(...pos));
       }
     }
     if (returnItems.length > 0)
       await this.bank.storeItems(returnItems);
-    await this.cleanInventory();
   }
 
   /* async sortBank() {

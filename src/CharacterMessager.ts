@@ -40,7 +40,7 @@ export class CharacterMessager {
     }
 
   async requestInfo(name: string) {
-    var resp = await this.cmr.request(name, {task: "request_info", data: null}, 5_000);
+    var resp = await this.cmr.request(name, {task: "request_info", data: null}, 1_000);
     if (resp.status == 200) {
       return <CMRequestInfoReply>resp.message;
     }

@@ -1,4 +1,5 @@
-import { ItemInfo } from "typed-adventureland"
+import { IPosition, ItemInfo } from "typed-adventureland"
+import { LocalChacterInfo } from "./Types"
 
 var lastPotion = new Date()
 export function smartUseHpOrMp() {
@@ -78,6 +79,10 @@ export function replenishPotions() {
         smart_move({x, y})
       })
   }
+}
+
+export function get_position(char: LocalChacterInfo): IPosition {
+  return get(`${char.name}_pos`);
 }
 
 function min(arg0: number, arg1: number): number {
