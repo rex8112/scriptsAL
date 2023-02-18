@@ -26,6 +26,7 @@ export interface BackgroundTask extends Task {
 export class TaskController {
   char: BaseCharacter;
   tasks: {[id: number]: Task};
+  running: boolean = false;
   backgroundTasks: {[id: number]: Task};
   idCount = 0;
 
@@ -42,7 +43,10 @@ export class TaskController {
     let task_to_run = v_tasks[0];
 
     set_message(task_to_run.displayName);
+    this.running = true;
     await task_to_run.run();
+    this.running = false;
+    set_message("Finished");
 
     delete this.tasks[task_to_run.id];
 
