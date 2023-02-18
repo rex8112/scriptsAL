@@ -18,6 +18,11 @@ export interface Task {
   cancel(): Promise<boolean>;
 }
 
+export interface BackgroundTask extends Task {
+  background: true;
+  interval: NodeJS.Timer | null;
+}
+
 export class TaskController {
   char: BaseCharacter;
   tasks: {[id: number]: Task};
@@ -51,6 +56,7 @@ export class TaskController {
 
     if (task.background) {
       this.backgroundTasks[task.id] = task;
+      task.run(); // Background tasks handle repeating themselves.
     } else {
       this.tasks[task.id] = task;
     }
