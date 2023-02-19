@@ -257,7 +257,7 @@ class BankPack {
       let item = this.items[i];
       if (item === null) return Number(i);
     }
-    if (this.items.length > 42) return null;
+    if (this.items.length > 41) return null;
     return this.items.length;
   }
 
