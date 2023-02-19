@@ -191,7 +191,7 @@ export class MerchantCharacter extends BaseCharacter {
       }
       if (scrolls + grabbed < totalAttempts) {
         await this.move("market");
-        buy("scroll0", totalAttempts - scrolls);
+        buy("scroll0", totalAttempts - scrolls + grabbed);
       }
     }
     await this.move("market");
