@@ -19,7 +19,7 @@ interface PathActionTown {
 
 type PathAction = PathActionMove | PathActionTeleport | PathActionTown;
 
-type MoverDesitination = SmartMoveToDestination | "market";
+export type MoverDestination = SmartMoveToDestination | "market";
 
 interface FetchPathResponse {
   path: PathAction[];
@@ -90,7 +90,7 @@ export class Mover {
 
   static async move(destination: IPosition | string) {
     if (is_string(destination)) {
-      await Mover.move_by_path(<MoverDesitination>destination);
+      await Mover.move_by_path(<MoverDestination>destination);
       return true;
     }
 
@@ -113,7 +113,7 @@ export class Mover {
     }
   }
 
-  static async move_by_path(destination: MoverDesitination) {
+  static async move_by_path(destination: MoverDestination) {
     Mover._stopping = false;
     Mover.stopped = false;
     let data = await Mover.get_path({x: Math.round(character.x), y: Math.round(character.y), map: character.map}, destination);
@@ -206,7 +206,7 @@ export class Mover {
     await sleep(250);
   }
 
-  static get_coord(destination: MoverDesitination): IPosition | null {
+  static get_coord(destination: MoverDestination): IPosition | null {
     let endPos;
     if (isIPosition(destination)) {
       endPos = {x: Math.round(destination.x), y: Math.round(destination.y), map: destination.map || character.map};
@@ -263,7 +263,7 @@ export class Mover {
     return endPos;
   }
 
-  static async get_path(start: IPosition, destination: MoverDesitination): Promise<FetchPathResponse | ErrorResponse> {
+  static async get_path(start: IPosition, destination: MoverDestination): Promise<FetchPathResponse | ErrorResponse> {
     let startPos = start;
     let endPos = null;
 
