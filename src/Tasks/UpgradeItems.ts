@@ -1,7 +1,55 @@
-import { ItemInfo } from "typed-adventureland";
+import { ItemInfo, ItemKey } from "typed-adventureland";
+import { BankPosition } from "../Bank";
 import { MerchantCharacter } from "../Character";
-import { ITask, Task } from "../Tasks";
-import { getItemPosition, getItemQuantity, get_position } from "../Utils";
+import { Items } from "../Items";
+import { BackgroundTask, Task, TaskController } from "../Tasks";
+import { getItemPosition, getItemQuantity } from "../Utils";
+
+export class CheckUpgrade extends BackgroundTask {
+  name = "upgrade_check";
+
+  displayName = "Upgrade Check";
+
+  msinterval = 30_000;
+
+  controller: TaskController;
+
+  constructor(char: MerchantCharacter, controller: TaskController) {
+    super(char);
+    this.char = char;
+    this.controller = controller;
+  }
+
+  isUpgradable(item: ItemInfo): boolean {
+    let i = Items[item.name];
+    if (i.upgrade !== undefined) return true;
+    return false;
+  }
+
+  findUpgradables() {
+    let positions = this.char.bank.findItems(this.isUpgradable);
+    let items: {[name: string]: [BankPosition, number][]} = {};
+    positions.forEach((pos) => {
+      let name = pos[2].name;
+      if (items[name] === undefined) items[name] = [];
+      items[name].push([pos, <number>pos[2].level]);
+    });
+
+    for (var iname in items) {
+      let item = items[iname];
+      let data = Items[iname];
+      if (data.upgrade === undefined) continue;
+      if (item.length <= data.upgrade.keep) continue;
+      item.sort((a, b) => b[1] - a[1]);
+    }
+  }
+
+  async run_task(): Promise<void> {
+    if (this.controller.taskEnqueued("upgrade_items")) return;
+
+    
+  }
+}
 
 export class UpgradeItems extends Task {
   name = "upgrade_items";

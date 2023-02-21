@@ -1,21 +1,5 @@
 import { BaseCharacter } from "./Character";
 
-export interface ITask {
-  name: string;
-  displayName: string;
-  id: number;
-  priority: number;
-  background: boolean;
-  cancellable: boolean;
-
-  initialize(id: number): void;
-  getPriority(): number;
-
-  run(): Promise<void>;
-  pause(): Promise<boolean>;
-  cancel(): Promise<boolean>;
-}
-
 export abstract class Task {
   abstract name: string;
   abstract displayName: string;
@@ -76,9 +60,25 @@ export abstract class DefaultTask extends Task {
   }
 }
 
-export interface BackgroundTask extends ITask {
-  background: true;
-  interval: NodeJS.Timer | null;
+export abstract class BackgroundTask extends Task {
+  cancellable: boolean = true;
+  background = true;
+  timer: NodeJS.Timer | null = null;
+  abstract msinterval: number;
+
+  async run() {
+    this.timer = setInterval(() => { super.run() }, this.msinterval);
+  }
+
+  getPriority(): number {
+    return 1;
+  }
+
+  async cancel() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    return true;
+  }
 }
 
 export class TaskController {
@@ -130,16 +130,16 @@ export class TaskController {
     this._pause = false;
   }
 
-  taskEnqueued(taskName: Task): boolean {
+  taskEnqueued(taskName: string): boolean {
     for (var id in this.tasks) {
       let task = this.tasks[id];
-      if (task.name == taskName.name) return true;
+      if (task.name == taskName) return true;
     }
     return false;
   }
 
   enqueueTask(task: Task, priority: number): number {
-    if (this.taskEnqueued(task)) return 0;
+    if (this.taskEnqueued(task.name)) return 0;
     task.initialize(this.idCount);
     task.Priority = priority;
     this.idCount++;

@@ -1,5 +1,5 @@
 import { MerchantCharacter } from "../Character";
-import { ITask, Task } from "../Tasks";
+import { Task } from "../Tasks";
 import { getItemPosition, getItemQuantity, get_position } from "../Utils";
 
 export class ReplenishFarmersTask extends Task {

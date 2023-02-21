@@ -1,7 +1,7 @@
 import { ItemInfo } from "typed-adventureland";
 import { BankPosition } from "../Bank";
 import { MerchantCharacter } from "../Character";
-import { ITask, Task } from "../Tasks";
+import { Task } from "../Tasks";
 import { getItemPosition, getItemQuantity, get_position } from "../Utils";
 
 export class CompoundItems extends Task {
