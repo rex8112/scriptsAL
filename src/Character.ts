@@ -5,6 +5,10 @@ import { LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
 import { getItemPosition, getItemQuantity } from "./Utils";
 import { Bank, BankPosition } from "./Bank";
+import { TaskController } from "./Tasks";
+import { CompoundItems } from "./Tasks/CompoundItems";
+import { UpgradeItems } from "./Tasks/UpgradeItems";
+import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 
 var globalAny: any = globalThis;
 
@@ -15,6 +19,7 @@ export class BaseCharacter {
   CM: CharacterMessager;
   working: boolean = false;
   bank: Bank;
+  taskController: TaskController;
 
   constructor(ch: Character) {
     this.original = ch;
@@ -22,6 +27,7 @@ export class BaseCharacter {
     this.name = ch.name;
     this.CM = new CharacterMessager();
     this.bank = new Bank(this);
+    this.taskController = new TaskController(this);
     globalAny.char = this;
   }
 
@@ -72,6 +78,7 @@ export class MerchantCharacter extends BaseCharacter {
     super(ch);
     this.startTasks();
     this.updateCharacterInfo();
+    this.taskController.run();
   }
 
   startTasks() {
@@ -88,15 +95,13 @@ export class MerchantCharacter extends BaseCharacter {
   async run() {
     if (this.bank.noInfo()) await this.bank.updateInfo();
 
-    if (this.getCompoundableItemsFromBank().length > 0) await this.compoundItems();
+    if (this.getCompoundableItemsFromBank().length > 0) this.taskController.enqueueTask(new CompoundItems(this), 100);
 
     if (this.getUpgradableItems().length > 0 
         || this.getUpgradableItemsInBank().length > 0)
-      await this.upgradeItems();
+      this.taskController.enqueueTask(new UpgradeItems(this), 100);
 
-    if (this.needRestock()) await this.restock();
-
-    if (this.needFarmerRun()) await this.farmerRun();
+    if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 200);
 
     setTimeout(this.run.bind(this), 1_000);
   }

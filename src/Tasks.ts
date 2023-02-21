@@ -1,15 +1,13 @@
 import { BaseCharacter } from "./Character";
 
-export interface Task {
+export interface ITask {
   name: string;
   displayName: string;
   id: number;
   priority: number;
   background: boolean;
-  paused: boolean | null;
   cancellable: boolean;
 
-  canPause(): boolean;
   initialize(id: number): void;
   getPriority(): number;
 
@@ -18,7 +16,67 @@ export interface Task {
   cancel(): Promise<boolean>;
 }
 
-export interface BackgroundTask extends Task {
+export abstract class Task {
+  abstract name: string;
+  abstract displayName: string;
+  abstract cancellable: boolean;
+  id: number = 0;
+  char: BaseCharacter;
+  _cancelling: boolean = false;
+  _running: boolean = false;
+  _priority: number = 0;
+  background: boolean = false;
+
+  constructor(char: BaseCharacter) {
+    this.char = char
+  }
+
+  async run(): Promise<void> {
+    this._running = true;
+    await this.run_task();
+    this._running = false;
+  }
+
+  abstract run_task(): Promise<void>;
+
+  abstract getPriority(): number;
+
+  initialize(id: number): void {
+    this.id = id;
+  }
+
+  isInitialized(): boolean {
+    return this.id > 0;
+  }
+
+  isRunning(): boolean {
+    return this._running;
+  }
+
+  set Priority(n: number) {
+    this._priority = n;
+  }
+
+  get Priority(): number {
+    return this.getPriority();
+  }
+
+  async cancel(): Promise<boolean> {
+    if (this.cancellable) {
+      this._cancelling = true;
+      return true;
+    }
+    return false;
+  }
+}
+
+export abstract class DefaultTask extends Task {
+  resetState() {
+    this._cancelling = false;
+  }
+}
+
+export interface BackgroundTask extends ITask {
   background: true;
   interval: NodeJS.Timer | null;
 }
@@ -28,12 +86,15 @@ export class TaskController {
   tasks: {[id: number]: Task};
   running: boolean = false;
   backgroundTasks: {[id: number]: Task};
-  idCount = 0;
+  defaultTask: DefaultTask | null;
+  idCount = 1;
+  _pause = false;
 
   constructor(char: BaseCharacter) {
     this.char = char;
     this.tasks = {};
     this.backgroundTasks = {};
+    this.defaultTask = null;
   }
 
   async run(): Promise<void> {
@@ -42,21 +103,48 @@ export class TaskController {
 
     let task_to_run = v_tasks[0];
 
-    set_message(task_to_run.displayName);
-    this.running = true;
-    await task_to_run.run();
-    this.running = false;
-    set_message("Finished");
+    if (task_to_run !== undefined && this._pause == false) {
+      if (this.defaultTask && this.defaultTask.isRunning()) this.defaultTask.cancel();
+      set_message(task_to_run.displayName);
+      this.running = true;
+      console.log("Running task");
+      await task_to_run.run();
+      this.running = false;
+      set_message("Finished");
+      delete this.tasks[task_to_run.id];
+    } else if (task_to_run === undefined && this._pause == false) {
+      if (this.defaultTask && this.defaultTask.isRunning() == false) {
+        this.defaultTask.run();
+      }
+    }
 
-    delete this.tasks[task_to_run.id];
 
     setTimeout(() => { this.run() }, 100);
   }
 
+  pause() {
+    this._pause = true;
+  }
+
+  unpause() {
+    this._pause = false;
+  }
+
+  taskEnqueued(taskName: Task): boolean {
+    for (var id in this.tasks) {
+      let task = this.tasks[id];
+      if (task.name == taskName.name) return true;
+    }
+    return false;
+  }
+
   enqueueTask(task: Task, priority: number): number {
+    if (this.taskEnqueued(task)) return 0;
     task.initialize(this.idCount);
-    task.priority = priority;
+    task.Priority = priority;
     this.idCount++;
+
+    console.log("Enqueuing task");
 
     if (task.background) {
       this.backgroundTasks[task.id] = task;
