@@ -56,6 +56,20 @@ export function getItemPosition(name: string, inventory: ItemInfo[], isize: numb
   return null
 }
 
+export function getFreeSlot(inventory: ItemInfo[], isize: number) {
+  let slot = null;
+  for (let i = 0; i < isize; i++) {
+    if (inventory[i] == null) {
+      slot = i;
+      break;
+    }
+  }
+  if (slot === null && inventory.length < isize) {
+    slot = inventory.length;
+  }
+  return slot
+}
+
 var replenishing = false
 export function replenishPotions() {
   if (replenishing) return

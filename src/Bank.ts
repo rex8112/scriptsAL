@@ -119,7 +119,7 @@ export class Bank {
    * 
    * @param pos The BankPosition of the item
    * @param quantity The amount of items to fetch, leave blank for entire stack.
-   * @returns The quantity of items grabbed.
+   * @returns The slot of the retrieved item.
    */
   async _getItemFromPosition(pos: BankPosition, quantity: number = 0): Promise<number> {
     if (pos[1] > 41 || pos[1] < 0) {
@@ -127,6 +127,7 @@ export class Bank {
       return 0;
     }
     await this.moveToPack(pos[0]);
+    let num;
     if (quantity > 0 && quantity < (pos[2].q || 1)) {
       await bank_retrieve(pos[0].name, pos[1], 41);
       split(41, quantity);
