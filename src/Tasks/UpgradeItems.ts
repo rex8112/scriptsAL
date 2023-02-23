@@ -12,6 +12,7 @@ export class CheckUpgrade extends BackgroundTask {
 
   msinterval = 30_000;
 
+  char: MerchantCharacter;
   controller: TaskController;
 
   constructor(char: MerchantCharacter, controller: TaskController) {
@@ -26,7 +27,7 @@ export class CheckUpgrade extends BackgroundTask {
     return false;
   }
 
-  findUpgradables() {
+  findUpgradables(): [getTo: number, items: BankPosition[]][] {
     let positions = this.char.bank.findItems(this.isUpgradable);
     let items: {[name: string]: [BankPosition, number][]} = {};
     positions.forEach((pos) => {
@@ -35,19 +36,31 @@ export class CheckUpgrade extends BackgroundTask {
       items[name].push([pos, <number>pos[2].level]);
     });
 
+    let positions_to_return: [getTo: number, items: BankPosition[]][] = [];
+
     for (var iname in items) {
       let item = items[iname];
       let data = Items[iname];
+      let bankPos: BankPosition[] = [];
       if (data.upgrade === undefined) continue;
       if (item.length <= data.upgrade.keep) continue;
       item.sort((a, b) => b[1] - a[1]);
+      // New items may become the new top items, this stops that.
+      let max = Math.min(data.upgrade.max, item[data.upgrade.keep-1][1] + 1);
+      let pruned = item.slice(data.upgrade.keep);
+
+      pruned.forEach((pos) => bankPos.push(pos[0]))
+      positions_to_return.push([max, bankPos]);
     }
+    return positions_to_return;
   }
 
   async run_task(): Promise<void> {
     if (this.controller.taskEnqueued("upgrade_items")) return;
 
-    
+    let items = this.findUpgradables();
+    if (items.length > 0)
+      this.controller.enqueueTask(new UpgradeItems(this.char, items), 100);
   }
 }
 
@@ -59,10 +72,12 @@ export class UpgradeItems extends Task {
   cancellable: boolean = false;
 
   char: MerchantCharacter;
+  items: [getTo: number, items: BankPosition[]][];
 
-  constructor(char: MerchantCharacter) {
+  constructor(char: MerchantCharacter, items: [getTo: number, items: BankPosition[]][]) {
     super(char);
     this.char = char;
+    this.items = items;
   }
 
   getPriority(): number {
