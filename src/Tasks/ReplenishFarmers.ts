@@ -65,7 +65,7 @@ export class ReplenishFarmersTask extends Task {
       var char = characterInfo[name];
       if (name == character.name || !Object.keys(this.char.characterInfo).includes(name)) continue;
       let position = get_position(char);
-      while (simple_distance(character, position) > 200) {
+      while (simple_distance(character, position) > 400) {
         if (this._cancelling) return;
 
         position = get_position(char);
