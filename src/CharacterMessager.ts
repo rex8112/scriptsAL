@@ -26,9 +26,9 @@ export class CharacterMessager {
   async gatherAllCharacterInfo(): Promise<{[name: string]: LocalChacterInfo}> {
     var cData: {[name: string]: LocalChacterInfo} = {};
     var promises = [];
-    for (var char of get_characters()) {
-      if (char.name === character.name) continue;
-      promises.push(this.requestInfo(char.name));
+    for (var char in get_active_characters()) {
+      if (char !== "code") continue;
+      promises.push(this.requestInfo(char));
     }
     var resolved = await Promise.all(promises);
     for (let data of resolved) {
