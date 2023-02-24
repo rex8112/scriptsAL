@@ -32,10 +32,12 @@ export class ReplenishFarmersTask extends Task {
     let grabbedM = getItemQuantity("mpot0", character.items, character.isize);
 
     if (bh > 0) {
-      grabbedH = await this.char.bank.items["hpot0"].getItem(hpots);
+      let newPositions = await this.char.bank.items["hpot0"].getItem(hpots);
+      newPositions.forEach((pos) => { grabbedH += character.items[pos].q || 1 })
     }
     if (bm > 0) {
-      grabbedM = await this.char.bank.items["mpot0"].getItem(mpots);
+      let newPositions = await this.char.bank.items["mpot0"].getItem(mpots);
+      newPositions.forEach((pos) => { grabbedM += character.items[pos].q || 1 })
     }
     if (grabbedH < hpots) {
       await this.char.move("market");
@@ -53,8 +55,8 @@ export class ReplenishFarmersTask extends Task {
     let totalHPots = 0;
     let totalMPots = 0;
     Object.values(characterInfo).forEach((char) => {
-      let hneeded = 300 - getItemQuantity("hpot0", char.items, char.isize);
-      let mneeded = 300 - getItemQuantity("mpot0", char.items, char.isize);
+      let hneeded = Math.max(300 - getItemQuantity("hpot0", char.items, char.isize), 0);
+      let mneeded = Math.max(300 - getItemQuantity("mpot0", char.items, char.isize), 0);
       totalHPots += hneeded;
       totalMPots += mneeded;
     });
@@ -80,8 +82,8 @@ export class ReplenishFarmersTask extends Task {
 
       let hpots = getItemPosition("hpot0", character.items, character.isize);
       let mpots = getItemPosition("mpot0", character.items, character.isize);
-      let hneeded = 300 - getItemQuantity("hpot0", char.items, char.isize);
-      let mneeded = 300 - getItemQuantity("mpot0", char.items, char.isize);
+      let hneeded = Math.max(300 - getItemQuantity("hpot0", char.items, char.isize), 0);
+      let mneeded = Math.max(300 - getItemQuantity("mpot0", char.items, char.isize), 0);
 
       if (hpots != null && hneeded > 0) await send_item(name, hpots, hneeded);
       if (mpots != null && mneeded > 0) await send_item(name, mpots, mneeded);
@@ -89,5 +91,6 @@ export class ReplenishFarmersTask extends Task {
       await Promise.all(promises);
     }
     await this.char.updateCharacterInfo();
+    await this.char.cleanInventory();
   }
 }
