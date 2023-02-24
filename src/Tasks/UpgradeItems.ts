@@ -60,7 +60,7 @@ export class CheckUpgrade extends BackgroundTask {
 
     let items = this.findUpgradables();
     if (items.length > 0)
-      this.controller.enqueueTask(new UpgradeItems(this.char, items), 100);
+      this.controller.enqueueTask(new UpgradeItems(this.char, /*items*/), 100);
   }
 }
 
@@ -72,12 +72,12 @@ export class UpgradeItems extends Task {
   cancellable: boolean = false;
 
   char: MerchantCharacter;
-  items: [getTo: number, items: BankPosition[]][];
+  //items: [getTo: number, items: BankPosition[]][];
 
-  constructor(char: MerchantCharacter, items: [getTo: number, items: BankPosition[]][]) {
+  constructor(char: MerchantCharacter, /*items: [getTo: number, items: BankPosition[]][]*/) {
     super(char);
     this.char = char;
-    this.items = items;
+    //this.items = items;
   }
 
   getPriority(): number {
@@ -123,7 +123,8 @@ export class UpgradeItems extends Task {
       set_message("Restocking");
       let grabbed = 0;
       if (this.char.bank.items["scroll0"]) {
-        grabbed += await this.char.bank.items["scroll0"].getItem(totalAttempts - scrolls);
+        let newPositions = await this.char.bank.items["scroll0"].getItem(totalAttempts - scrolls);
+        newPositions.forEach((pos) => { grabbed += character.items[pos].q || 1 });
       }
       if (scrolls + grabbed < totalAttempts) {
         await this.char.move("market");

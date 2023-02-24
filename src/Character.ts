@@ -182,7 +182,7 @@ export class MerchantCharacter extends BaseCharacter {
     await this.cleanInventory();
   }
 
-  async upgradeItems() {
+  /* async upgradeItems() {
     var totalAttempts = 0;
     await this.bank.getItems(this.isUpgradable);
     var items = this.getUpgradableItems();
@@ -216,7 +216,7 @@ export class MerchantCharacter extends BaseCharacter {
     if (returnItems.length > 0)
       await this.bank.storeItems(returnItems);
     await this.cleanInventory();
-  }
+  } */
 
   async compoundItems() {
     var positions = this.getCompoundableItemsFromBank();

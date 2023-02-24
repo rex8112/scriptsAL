@@ -1,5 +1,6 @@
 import { BankPackTypeItemsOnly, CharacterBankInfos, ItemInfo, ItemKey, MapKey } from "typed-adventureland";
 import { BaseCharacter } from "./Character";
+import { getFreeSlot } from "./Utils";
 
 export type BankPosition = [pack: BankPack, pos: number, item: ItemData];
 
@@ -51,7 +52,7 @@ export class Bank {
     this.gold = bankInfo?.gold || 0;
     console.log("Building Items");
     this.buildItems();
-    console.log(this.bank);
+    game_log("Bank Initialization Finished", "green");
   }
 
   buildItems() {
@@ -63,7 +64,6 @@ export class Bank {
       for (let i in pack_data) {
         let item = pack_data[i];
         if (item !== null) {
-          console.log("Adding: ", item.name);
           this._addItemPosition(pack, Number(i), item);
         }
       }
@@ -119,43 +119,50 @@ export class Bank {
    * 
    * @param pos The BankPosition of the item
    * @param quantity The amount of items to fetch, leave blank for entire stack.
-   * @returns The slot of the retrieved item.
+   * @returns The slot of the retrieved item and the quantity retrieved.
    */
-  async _getItemFromPosition(pos: BankPosition, quantity: number = 0): Promise<number> {
+  async _getItemFromPosition(pos: BankPosition, quantity: number = 0): Promise<[number | null, number]> {
     if (pos[1] > 41 || pos[1] < 0) {
       console.log(`${pos[1]} is outside of allowed range!`);
-      return 0;
+      return [null, 0];
     }
     await this.moveToPack(pos[0]);
-    let num;
+    let num = getFreeSlot(character.items, character.isize);
+    if (num === null || num >= 41)
+      return [null, 0];
     if (quantity > 0 && quantity < (pos[2].q || 1)) {
       await bank_retrieve(pos[0].name, pos[1], 41);
-      split(41, quantity);
+      await split(41, quantity); // As long as the inventory doesn't change this split should put in the free slot found above.
       await bank_store(41, pos[0].name, pos[1]);
 
-      if (pos[2].q) 
+      if (pos[2].q)
         pos[2].q -= quantity;
 
-      return quantity;
+      return [num, quantity];
     }
-    await bank_retrieve(pos[0].name, pos[1]);
+    await bank_retrieve(pos[0].name, pos[1], num);
     this.items[pos[2].name].removePosition(pos);
 
-    return pos[2].q || 1;
+    return [num, pos[2].q || 1];
   }
 
   /**
    * Get items from an array of BankPositions
    * @param positions An array of BankPosition to grab from.
    * @param quantity The total quantity of items to grab. 0 disables.
-   * @returns Returns the quantity grabbed.
+   * @returns Returns list of positions.
    */
-  async getItemFromPositions(positions: BankPosition[], quantity: number = 0) {
-    let grabbed = 0;
+  async getItemFromPositions(positions: BankPosition[], quantity: number = 0): Promise<number[]> {
+    let grabbed = [];
+    let qGrabbed = 0;
     for (var i in positions) {
       let pos = positions[i];
-      grabbed += await this._getItemFromPosition(pos, quantity);
-      if (quantity > 0 && grabbed >= quantity) break;
+      let [num, q] = await this._getItemFromPosition(pos, quantity);
+      if (num !== null) {
+        qGrabbed += q;
+        grabbed.push(num);
+      }
+      if (quantity > 0 && qGrabbed >= quantity) break;
     }
     return grabbed;
   }
@@ -178,6 +185,7 @@ export class Bank {
    * @returns The amount of stacks stored. Should be the same as ipos.length if everything worked.
    */
   async storeItems(ipos: number[]): Promise<number> {
+    ipos.sort((a, b) => a - b);
     let stored = 0;
     for (let pos of ipos) {
       let item = character.items[pos];
@@ -194,10 +202,13 @@ export class Bank {
         for (let i in spots) {
           let spot = spots[i];
           if (<number>meta.s - <number>spot[2].q >= item.q) {
-            // By pulling this item into the character inventory, we will cause it to stack the items.
-            await this._getItemFromPosition(spot);
-            item = character.items[pos];
-            break;
+            // By pulling this item into the character inventory, then using swap, we can stack the items.
+            let [num, q] = await this._getItemFromPosition(spot);
+            if (num !== null) {
+              await swap(pos, num);
+              item = character.items[pos];
+              break;
+            }
           }
         }
       }
@@ -314,9 +325,9 @@ class BankItem {
    * Gets one or more of the item that fits the filter.
    * @param quantity Quantity of the item to grab. Defaults to 1.
    * @param filter A filter of the items to grab. Defaults to null.
-   * @returns Returns quantity grabbed.
+   * @returns Returns new positions.
    */
-  async getItem(quantity: number = 1, filter: ((i: ItemInfo) => boolean) | null = null) {
+  async getItem(quantity: number = 1, filter: ((i: ItemInfo) => boolean) | null = null): Promise<number[]> {
     if (character.map !== "bank")
       await this.bank.char.move("bank");
     let positions = this.findItem(filter);
