@@ -1,9 +1,9 @@
-import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, IPosition, ItemInfo, ItemKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
+import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, Entity, IPosition, ItemInfo, ItemKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
 import { LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
-import { getItemPosition, getItemQuantity } from "./Utils";
+import { getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils";
 import { Bank, BankPosition } from "./Bank";
 import { TaskController } from "./Tasks";
 import { CompoundItems } from "./Tasks/CompoundItems";
@@ -21,6 +21,8 @@ export class BaseCharacter {
   bank: Bank;
   taskController: TaskController;
 
+  potionUseTask: NodeJS.Timer | null = null;
+
   constructor(ch: Character) {
     this.original = ch;
     this.class = ch.ctype;
@@ -29,6 +31,18 @@ export class BaseCharacter {
     this.bank = new Bank(this);
     this.taskController = new TaskController(this);
     globalAny.char = this;
+    this.startTasks();
+    this.taskController.run();
+  }
+
+  startTasks() {
+    if (this.potionUseTask === null)
+      this.potionUseTask = setInterval(smartUseHpOrMp, 250);
+  }
+
+  async startRun() {
+    await this.run();
+    setTimeout(() => { this.startRun() }, 500);
   }
 
   async run() {}
@@ -63,6 +77,40 @@ export class BaseCharacter {
   }
 }
 
+export class FarmerCharacter extends BaseCharacter {
+  mode: "leader" | "follower" | "none" = "none";
+  leader: string | null = "";
+
+  async run() {
+    if (this.mode == "follower") {
+      if (this.leader === null) return;
+
+      let l = get_player(this.leader);
+      if (l === null) return;
+      while (simple_distance(character, l) > Math.max(character.range, 200))
+        await this.move(l);
+
+      let t = get_target_of(l);
+      if (t === null) return;
+
+      await this.attack(t);
+    }
+  }
+
+  async attack(target: Entity) {
+    change_target(target);
+      if (can_attack(target)) {
+        set_message("Attacking");
+        attack(target);
+      } else {
+        const dist = simple_distance(target,character);
+        if(!is_moving(character) && dist > character.range - 10 && Mover.stopped) {
+          this.move(target);
+        }
+      }
+  }
+}
+
 export class MerchantCharacter extends BaseCharacter {
   static itemsToTake: ItemKey[] = [
     "beewings", "crabclaw", "gslime", "gem0", "seashell", "stinger", "hpbelt",
@@ -70,22 +118,19 @@ export class MerchantCharacter extends BaseCharacter {
   ];
   characterInfo: {[name: string]: LocalChacterInfo} = {};
   updateTask: NodeJS.Timer | null = null;
-  potionUseTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
 
   constructor(ch: Character) {
     super(ch);
-    this.startTasks();
     this.updateCharacterInfo();
-    this.taskController.run();
   }
 
   startTasks() {
+    super.startTasks();
+
     if (this.updateTask === null)
       this.updateTask = setInterval(this.updateCharacterInfo.bind(this), 30_000);
-    if (this.potionUseTask === null)
-      this.potionUseTask = setInterval(use_hp_or_mp, 250);
     if (this.standTask === null)
       this.standTask = setInterval(this.open_close_stand.bind(this), 150);
     if (this.inspectMerchantTask === null)
@@ -102,8 +147,6 @@ export class MerchantCharacter extends BaseCharacter {
       this.taskController.enqueueTask(new UpgradeItems(this), 100);
 
     if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 200);
-
-    setTimeout(this.run.bind(this), 1_000);
   }
 
   needRestock() {
