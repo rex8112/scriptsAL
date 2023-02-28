@@ -31,7 +31,6 @@ export class BaseCharacter {
     this.bank = new Bank(this);
     this.taskController = new TaskController(this);
     globalAny.char = this;
-    this.startTasks();
     this.taskController.run();
   }
 
@@ -41,6 +40,7 @@ export class BaseCharacter {
   }
 
   async startRun() {
+    this.startTasks();
     await this.run();
     setTimeout(() => { this.startRun() }, 500);
   }
@@ -130,11 +130,11 @@ export class MerchantCharacter extends BaseCharacter {
     super.startTasks();
 
     if (this.updateTask === null)
-      this.updateTask = setInterval(this.updateCharacterInfo.bind(this), 30_000);
+      this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
     if (this.standTask === null)
-      this.standTask = setInterval(this.open_close_stand.bind(this), 150);
+      this.standTask = setInterval(() => { this.open_close_stand() }, 150);
     if (this.inspectMerchantTask === null)
-      this.inspectMerchantTask = setInterval(this.inspectNearbyMerchants.bind(this), 5_000);
+      this.inspectMerchantTask = setInterval(() => { this.inspectNearbyMerchants() }, 5_000);
   }
 
   async run() {
