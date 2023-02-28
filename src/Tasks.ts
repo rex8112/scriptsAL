@@ -107,9 +107,11 @@ export class TaskController {
       if (this.defaultTask && this.defaultTask.isRunning()) this.defaultTask.cancel();
       set_message(task_to_run.displayName);
       this.running = true;
-      console.log("Running task");
+      console.log("Running task", task_to_run.displayName);
+      game_log(`Starting Task: ${task_to_run.displayName}`);
       await task_to_run.run();
       this.running = false;
+      game_log(`Finished Task: ${task_to_run.displayName}`);
       set_message("Finished");
       delete this.tasks[task_to_run.id];
     } else if (task_to_run === undefined && this._pause == false) {
@@ -143,8 +145,6 @@ export class TaskController {
     task.initialize(this.idCount);
     task.Priority = priority;
     this.idCount++;
-
-    console.log("Enqueuing task");
 
     if (task.background) {
       this.backgroundTasks[task.id] = task;
