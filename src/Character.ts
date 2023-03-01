@@ -11,8 +11,6 @@ import { UpgradeItems } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Vector } from "./Utils/Vector";
 
-var globalAny: any = globalThis;
-
 export class BaseCharacter {
   original: Character;
   class: ClassKey;
@@ -21,23 +19,29 @@ export class BaseCharacter {
   working: boolean = false;
   bank: Bank;
   taskController: TaskController;
+  leader: string | null = null;
 
   potionUseTask: NodeJS.Timer | null = null;
+  lootTask: NodeJS.Timer | null = null;
+  respawnTask: NodeJS.Timer | null = null;
 
   constructor(ch: Character) {
     this.original = ch;
     this.class = ch.ctype;
     this.name = ch.name;
-    this.CM = new CharacterMessager();
+    this.CM = new CharacterMessager(this);
     this.bank = new Bank(this);
     this.taskController = new TaskController(this);
-    globalAny.char = this;
     this.taskController.run();
   }
 
   startTasks() {
     if (this.potionUseTask === null)
       this.potionUseTask = setInterval(smartUseHpOrMp, 250);
+    if (this.lootTask === null)
+      this.lootTask = setInterval(loot, 250);
+    if (this.respawnTask === null)
+      this.respawnTask = setInterval(autoRespawn, 15_000);
   }
 
   async startRun() {
@@ -47,6 +51,10 @@ export class BaseCharacter {
   }
 
   async run() {}
+
+  setLeader(leader: string) {
+    this.leader = leader;
+  }
 
   /**
    * Get an array of all instances of an item in your inventory.
@@ -80,14 +88,27 @@ export class BaseCharacter {
 
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
-  leader: string | null = "";
+
+  setLeader(leader: string) {
+    super.setLeader(leader);
+    if (leader === this.name) {
+      this.mode = "leader";
+      game_log("Becoming Leader");
+    } else {
+      this.mode = "follower";
+      game_log(`Becoming Follower to ${this.leader}`);
+    }
+  }
 
   async run() {
     if (this.mode == "follower") {
       if (this.leader === null) return;
 
       let l = get_player(this.leader);
-      if (l === null) return;
+      if (l === null) { 
+        await this.move(get_position(this.leader));
+        return;
+      }
       while (simple_distance(character, l) > Math.max(character.range, 200))
         await this.move(l);
 
@@ -95,12 +116,24 @@ export class FarmerCharacter extends BaseCharacter {
       if (t === null) return;
 
       await this.attack(t);
+    } else if (this.mode == "leader") {
+      let target = get_targeted_monster();
+      if (target === null) {
+        target = get_nearest_monster({no_target: true, type: "bee"});
+      }
+      if (target === null) {
+        await this.move("bee");
+        target = get_nearest_monster({no_target: true, type: "bee"});
+      }
+      if (target === null) return;
+
+      await this.attack(target);
     }
   }
 
   async attack(target: Entity) {
     change_target(target);
-    while (target.dead === false) {
+    while (target.dead === undefined) {
       if (can_attack(target)) {
         set_message("Attacking");
         attack(target);
@@ -111,12 +144,12 @@ export class FarmerCharacter extends BaseCharacter {
         
         let distanceToBe;
         if (character.range > target.range) {
-          distanceToBe = Math.max((character.range + target.range) / 2, character.range - 10);
+          distanceToBe = (character.range + target.range) / 2;
         } else {
           distanceToBe = character.range - 10;
         }
 
-        if(!is_moving(character) && dist > distanceToBe && Mover.stopped) {
+        if(!is_moving(character) && (dist !== distanceToBe) && Mover.stopped) {
           let moveTo = tPos.pointTowards(cPos, distanceToBe);
           this.move(moveTo);
         }
@@ -445,9 +478,18 @@ export class MerchantCharacter extends BaseCharacter {
   async updateCharacterInfo() {
     var cData = await this.CM.gatherAllCharacterInfo();
     this.characterInfo = cData;
+    if (this.leader !== null && !Object.keys(cData).includes(this.leader)) {
+      this.leader = null;
+    }
     for (let name in cData) {
       let char = cData[name];
       let invite = false;
+      if (this.leader == null) {
+        this.leader = char.name;
+      }
+      if (char.leader !== this.leader) {
+        this.CM.requestSetLeader(char.name, this.leader);
+      }
       if (char.party === null) {
         invite = true;
       } else if (char.party !== character.name) {
@@ -477,6 +519,14 @@ export class MerchantCharacter extends BaseCharacter {
   }
 }
 
-function get_position(char: LocalChacterInfo): IPosition {
-  return get(`${char.name}_pos`);
+function autoRespawn() {
+  if (character.rip) {
+    respawn();
+  }
+}
+
+function get_position(char: LocalChacterInfo | string): IPosition {
+  if (typeof char != "string")
+    char = char.name;
+  return get(`${char}_pos`);
 }

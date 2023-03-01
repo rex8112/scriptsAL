@@ -1,9 +1,12 @@
+import { BaseCharacter, FarmerCharacter, MerchantCharacter } from "./Character";
 import { CMRequests, Request } from "./CMRequests";
-import { CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMTask, LocalChacterInfo } from "./Types";
+import { CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMRequestSetLeader, CMRequestSetLeaderReply, CMTask, LocalChacterInfo } from "./Types";
 
 export class CharacterMessager {
   cmr: CMRequests;
-  constructor() {
+  char: FarmerCharacter | MerchantCharacter | BaseCharacter;
+  constructor(char: FarmerCharacter | MerchantCharacter | BaseCharacter) {
+    this.char = char;
     this.cmr = new CMRequests(this.handler.bind(this));
   }
 
@@ -18,6 +21,8 @@ export class CharacterMessager {
       this.requestPartyAcceptReceived(<Request<CMRequestPartyAccept>>message);
     } else if (message.message.task === "request_leave_party") {
       this.requestLeavePartyReceived(<Request<CMRequestLeaveParty>>message);
+    } else if (message.message.task === "request_set_leader") {
+      this.requestSetLeaderReceived(<Request<CMRequestSetLeader>>message);
     } else {
       message.respond({status: 400, message: `Invalid Request: ${message.message?.task} not recognized.`});
     }
@@ -27,9 +32,17 @@ export class CharacterMessager {
     var cData: {[name: string]: LocalChacterInfo} = {};
     var promises = [];
     let status = get_active_characters();
-    for (var char in status) {
-      if (status[char] !== "code") continue;
-      promises.push(this.requestInfo(char));
+    if (Object.keys(status).length > 1) {
+      for (let char in status) {
+        if (status[char] !== "code") continue;
+        promises.push(this.requestInfo(char));
+      }
+    } else {
+      let allCharacters = get_characters();
+      for (let char of allCharacters) {
+        if (char.name == character.name) continue;
+        promises.push(this.requestInfo(char.name));
+      }
     }
     var resolved = await Promise.all(promises);
     for (let data of resolved) {
@@ -58,6 +71,8 @@ export class CharacterMessager {
       party: character.party || null,
       time: new Date()
     };
+
+    if (this.char.leader) info.leader = this.char.leader;
 
     var response: CMRequestInfoReply = {
       task: "request_info_reply",
@@ -167,5 +182,22 @@ export class CharacterMessager {
     } catch {
       request.respondOK(false);
     }
+  }
+
+  async requestSetLeader(name: string, leader: string) {
+    var request: CMRequestSetLeader = {
+      task: "request_set_leader",
+      data: leader
+    }
+    var resp = await this.cmr.request(name, request, 5_000);
+    if (resp.status == 200) {
+      return <CMRequestLeavePartyReply>resp.message;
+    }
+    return null;
+  }
+
+  requestSetLeaderReceived(request: Request<CMRequestSetLeader>) {
+    this.char.setLeader(request.message.data);
+    request.respondOK(true);
   }
 }

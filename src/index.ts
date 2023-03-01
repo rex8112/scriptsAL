@@ -9,7 +9,7 @@ import { RunMerchant } from "./Merchant";
 import { CMRequests } from "./CMRequests";
 import { CMTask } from "./Types";
 import { getItemPosition, getItemQuantity } from "./Utils";
-import { BaseCharacter, MerchantCharacter } from "./Character";
+import { BaseCharacter, FarmerCharacter, MerchantCharacter } from "./Character";
 /* var CMR = new CMRequests(async (request) => {
   var message: CMTask = request.message;
   if (message.task == "merchant_arrived") {
@@ -59,16 +59,19 @@ import { BaseCharacter, MerchantCharacter } from "./Character";
     }
   }
 }); */
-var char: MerchantCharacter | BaseCharacter | null = null;
+let globalAny = <any>globalThis;
+if (globalAny.char === undefined)
+  globalAny.char = {};
+var char: MerchantCharacter | FarmerCharacter | null = null;
 
 if (character.ctype == "merchant") {
   if (char === null) char = new MerchantCharacter(character);
+  globalAny.char[character.name] = char;
   char.startRun();
 } else {
-  setInterval(async () => {
-    if (char === null) char = new BaseCharacter(character);
-    RunFarmer();
-  }, 250);
+  if (char === null) char = new FarmerCharacter(character);
+  char.mode = "leader";
+  char.startRun();
 }
 
 

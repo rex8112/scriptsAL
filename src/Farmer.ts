@@ -1,9 +1,11 @@
-import { BaseCharacter } from "./Character";
+import { BaseCharacter, FarmerCharacter } from "./Character";
 import { Mover } from "./Mover";
 import { replenishPotions, smartUseHpOrMp } from "./Utils";
 
 const attack_mode=true;
 const mon_type = "bee";
+const farmer = new FarmerCharacter(character);
+farmer.mode = "leader";
 
 export async function RunFarmer() {
   smartUseHpOrMp();
@@ -12,27 +14,5 @@ export async function RunFarmer() {
 
   if(!attack_mode || character.rip || is_moving(character)) return;
 
-  const target = get_nearest_monster({type: mon_type});
-  
-  if (target) {
-    change_target(target);
-    if (can_attack(target)) {
-      set_message("Attacking");
-      attack(target);
-    } else {
-      const dist = simple_distance(target,character);
-      if(!is_moving(character) 
-          && dist > character.range - 10 && Mover.stopped) {
-        if(can_move_to(target.real_x,target.real_y)) {
-          move((target.real_x + character.real_x) / 2, (target.real_y + character.real_y) / 2);
-        } else {
-          set_message("Seeking");
-          Mover.move(target);
-        }
-      }
-    }
-  } else if(!is_moving(character) && Mover.stopped) {
-    set_message("Finding");
-    Mover.move(<SmartMoveToDestination>mon_type);
-  }
+  farmer.run();
 }

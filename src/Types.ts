@@ -17,12 +17,13 @@ export interface LocalChacterInfo {
   isize: number;
   time: Date;
   party: string | null;
+  leader?: string;
 }
 
 export type CMTask = CMRequestInfo | CMRequestInfoReply | CMRequestItems 
                       | CMRequestItemsReply | CMRequestGold | CMRequestGoldReply 
                       | CMRequestPartyAccept | CMRequestPartyAcceptReply | CMRequestLeaveParty
-                      | CMRequestLeavePartyReply;
+                      | CMRequestLeavePartyReply | CMRequestSetLeader;
 
 export interface CMRequestInfo {
   task: "request_info";
@@ -71,5 +72,15 @@ export interface CMRequestLeaveParty {
 
 export interface CMRequestLeavePartyReply {
   task: "request_leave_party_reply";
+  data: boolean;
+}
+
+export interface CMRequestSetLeader {
+  task: "request_set_leader";
+  data: string;
+}
+
+export interface CMRequestSetLeaderReply {
+  task: "request_set_leader_reply";
   data: boolean;
 }
