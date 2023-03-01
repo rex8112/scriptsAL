@@ -1,12 +1,4 @@
-export class Point {
-  x: number;
-  y: number;
-
-  constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
-  }
-}
+import { Vector } from "./Vector";
 
 export class Line {
   slope: number;
@@ -22,7 +14,7 @@ export class Line {
     this.intercept = b;
   }
 
-  static fromTwoPoints(a: Point, b: Point): Line {
+  static fromTwoPoints(a: Vector, b: Vector): Line {
     let slope = (b.y - a.y) / (b.x - a.x); // m = rise/run
     let intercept = a.y - (slope * a.x); // b = y-mx
     return new Line(slope, intercept)

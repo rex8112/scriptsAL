@@ -9,6 +9,7 @@ import { TaskController } from "./Tasks";
 import { CompoundItems } from "./Tasks/CompoundItems";
 import { UpgradeItems } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
+import { Vector } from "./Utils/Vector";
 
 var globalAny: any = globalThis;
 
@@ -99,15 +100,30 @@ export class FarmerCharacter extends BaseCharacter {
 
   async attack(target: Entity) {
     change_target(target);
+    while (target.dead === false) {
       if (can_attack(target)) {
         set_message("Attacking");
         attack(target);
       } else {
-        const dist = simple_distance(target,character);
-        if(!is_moving(character) && dist > character.range - 10 && Mover.stopped) {
-          this.move(target);
+        let cPos = Vector.fromRealPosition(character);
+        let tPos = Vector.fromRealPosition(target);
+        let dist = cPos.distanceFrom(tPos);
+        
+        let distanceToBe;
+        if (character.range > target.range) {
+          distanceToBe = Math.max((character.range + target.range) / 2, character.range - 10);
+        } else {
+          distanceToBe = character.range - 10;
+        }
+
+        if(!is_moving(character) && dist > distanceToBe && Mover.stopped) {
+          let moveTo = tPos.pointTowards(cPos, distanceToBe);
+          this.move(moveTo);
         }
       }
+
+      await sleep(250);
+    }
   }
 }
 
