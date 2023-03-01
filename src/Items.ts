@@ -95,6 +95,13 @@ var GabrialVendorInstructions: VendorInstructions = {
   keep: 5
 }
 
+var LucasVendorInstructions: VendorInstructions = {
+  location: "market",
+  buy: true,
+  sell: false,
+  keep: 1000
+}
+
 export var Items: {[name: string]: Item} = {
 
   helmet: {
@@ -161,9 +168,51 @@ export var Items: {[name: string]: Item} = {
     price: G.items["ringsj"].g,
     compound: {
       keep: 6,
-      max: 4,
+      max: 5,
       primling: 20,
       primordial: 20
     }
+  },
+
+  hpot0: {
+    name: "hpot0",
+    meta: G.items["hpot0"],
+    price: G.items["hpot0"].g,
+    vendor: LucasVendorInstructions
+  },
+
+  mpot0: {
+    name: "mpot0",
+    meta: G.items["mpot0"],
+    price: G.items["mpot0"].g,
+    vendor: LucasVendorInstructions
+  },
+
+  scroll0: {
+    name: "scroll0",
+    meta: G.items["scroll0"],
+    price: G.items["scroll0"].g,
+    vendor: LucasVendorInstructions
+  },
+
+  scroll1: {
+    name: "scroll1",
+    meta: G.items["scroll1"],
+    price: G.items["scroll1"].g,
+    vendor: LucasVendorInstructions
+  },
+
+  cscroll0: {
+    name: "cscroll0",
+    meta: G.items["cscroll0"],
+    price: G.items["cscroll0"].g,
+    vendor: LucasVendorInstructions
+  },
+
+  cscroll1: {
+    name: "cscroll1",
+    meta: G.items["cscroll1"],
+    price: G.items["cscroll1"].g,
+    vendor: LucasVendorInstructions
   }
 }

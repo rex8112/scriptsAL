@@ -128,7 +128,7 @@ export class UpgradeItems extends Task {
       }
       if (scrolls + grabbed < totalAttempts) {
         await this.char.move("market");
-        buy("scroll0", totalAttempts - (scrolls + grabbed));
+        this.char.buy("scroll0", totalAttempts - (scrolls + grabbed));
       }
     }
     await this.char.move("market");

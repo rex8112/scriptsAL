@@ -93,7 +93,7 @@ export class Bank {
     this.gold += amt;
   }
 
-  async withdrawGold(amount: number): Promise<void> {
+  async withdrawGold(amount: number): Promise<number> {
     let amt = amount;
     if (amt > this.gold) {
       amt = this.gold;
@@ -104,6 +104,7 @@ export class Bank {
     await this.moveToPack("gold");
     bank_withdraw(amt);
     this.gold -= amt;
+    return amt;
   }
 
   findItems(filter: ((i: ItemInfo) => boolean)): BankPosition[] {

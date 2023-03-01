@@ -39,14 +39,14 @@ export class ReplenishFarmersTask extends Task {
       let newPositions = await this.char.bank.items["mpot0"].getItem(mpots);
       newPositions.forEach((pos) => { grabbedM += character.items[pos].q || 1 })
     }
+    let buyList = [];
     if (grabbedH < hpots) {
-      await this.char.move("market");
-      buy("hpot0", hpots - grabbedH);
+      buyList.push(["hpot0", hpots - grabbedH]);
     }
     if (grabbedM < mpots) {
-      await this.char.move("market");
-      buy("mpot0", mpots - grabbedM);
+      buyList.push(["mpot0", mpots - grabbedM]);
     }
+    await this.char.bulk_buy([["hpot0", hpots - grabbedH], ["mpot0", mpots - grabbedM]])
   }
 
   async run_task(): Promise<void> {

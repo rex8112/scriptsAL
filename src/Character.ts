@@ -10,6 +10,7 @@ import { CompoundItems } from "./Tasks/CompoundItems";
 import { UpgradeItems } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Vector } from "./Utils/Vector";
+import { Items } from "./Items";
 
 export class BaseCharacter {
   original: Character;
@@ -198,14 +199,6 @@ export class MerchantCharacter extends BaseCharacter {
     if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 200);
   }
 
-  needRestock() {
-    let hpots = getItemQuantity("hpot0", character.items, character.isize);
-    let mpots = getItemQuantity("mpot0", character.items, character.isize)
-    if (hpots < 1_000) return true;
-    if (mpots < 1_000) return true;
-    return false;
-  }
-
   open_close_stand() {
     if (is_moving(character) && character.standed) {
       close_stand();
@@ -229,15 +222,6 @@ export class MerchantCharacter extends BaseCharacter {
     if (character.gold > 2_000_000) {
       await this.bank.depositGold(character.gold - 2_000_000);
     }
-  }
-
-  async restock() {
-    await this.move("potions");
-
-    let hpots = getItemQuantity("hpot0", character.items, character.isize);
-    let mpots = getItemQuantity("mpot0", character.items, character.isize)
-    if (hpots < 1_000) buy("hpot0", 1_000 - hpots);
-    if (mpots < 1_000) buy("mpot0", 1_000 - mpots);
   }
 
   async farmerRun() {
@@ -274,41 +258,43 @@ export class MerchantCharacter extends BaseCharacter {
     await this.cleanInventory();
   }
 
-  /* async upgradeItems() {
-    var totalAttempts = 0;
-    await this.bank.getItems(this.isUpgradable);
-    var items = this.getUpgradableItems();
-    for (var i in items) totalAttempts += items[i][1];
-    var scrolls = getItemQuantity("scroll0", character.items, character.isize);
-    if (scrolls < totalAttempts) {
-      set_message("Restocking");
-      let grabbed = 0;
-      if (this.bank.items["scroll0"]) {
-        grabbed += await this.bank.items["scroll0"].getItem(totalAttempts - scrolls);
-      }
-      if (scrolls + grabbed < totalAttempts) {
-        await this.move("market");
-        buy("scroll0", totalAttempts - scrolls + grabbed);
-      }
+  async buy(item: ItemKey, amount: number): Promise<boolean> {
+    let i = Items[item];
+    if (i === undefined || !i.vendor?.buy) return false;
+    let neededGold = amount * i.price;
+    if (neededGold > character.gold) {
+      if (this.bank.gold >= neededGold - character.gold)
+        await this.bank.withdrawGold(neededGold - character.gold);
+      else
+        return false;
     }
-    await this.move("market");
-    set_message("Upgrading");
-    let returnItems = [];
-    for (var i in items) {
-      let pair = items[i];
-      let lastResult;
-      for (var y = 0; y < pair[1]; y++) {
-        lastResult = await upgrade(pair[0], <number>getItemPosition("scroll0", character.items, character.isize));
-        if (lastResult.success === false) break;
-      }
-      if (lastResult?.success) {
-        returnItems.push(lastResult.num);
-      }
+    await this.move(i.vendor.location);
+    buy_with_gold(item, amount);
+    return true;
+  }
+
+  async bulk_buy(items: [item: ItemKey, amount: number][]): Promise<boolean> {
+    let totalGold = 0;
+    for (let [item, amount] of items) {
+      let i = Items[item];
+      if (i === undefined || !i.vendor?.buy) return false;
+      totalGold += amount * i.price;
     }
-    if (returnItems.length > 0)
-      await this.bank.storeItems(returnItems);
-    await this.cleanInventory();
-  } */
+
+    if (totalGold > character.gold) {
+      if (this.bank.gold >= totalGold - character.gold)
+        await this.bank.withdrawGold(totalGold - character.gold);
+      else
+        return false;
+    }
+
+    for (let [item, amount] of items) {
+      let i = Items[item];
+      if (i.vendor) await this.move(i.vendor.location);
+      await buy_with_gold(item, amount);
+    }
+    return true;
+  }
 
   async compoundItems() {
     var positions = this.getCompoundableItemsFromBank();
@@ -349,50 +335,6 @@ export class MerchantCharacter extends BaseCharacter {
     if (returnItems.length > 0)
       await this.bank.storeItems(returnItems);
   }
-
-  /* async sortBank() {
-    if (this.bank === null) return;
-    console.log("Building index");
-    var items: {[name in ItemKey]: [BankPackTypeItemsOnly, number, number][]} = {};
-    for (var pack in this.bank) {
-      let bank = this.bank[<BankPackTypeItemsOnly>pack];
-      for (var i in bank) {
-        var item = bank[i];
-        if (item === null) continue;
-
-        if (items[item.name]) {
-          items[item.name].push([<BankPackTypeItemsOnly>pack, Number(i), item.q || 1]);
-        } else {
-          items[item.name] = [[<BankPackTypeItemsOnly>pack, Number(i), item.q || 1]];
-        }
-      }
-    }
-
-    await this.move("bank");
-
-    console.log("Beginning Sort", items);
-    for (var name in items) {
-      let item = items[name];
-      if (G.items[name].s > 1 && item.length > 1) {
-        let first = item[0];
-        let rest = item.splice(1);
-        for (let i = rest.length - 1; i >= 0; i--) {
-          console.log("Sorting");
-          let int = rest[i];
-          let res: any = await bank_retrieve(int[0], int[1], 41);
-          if (res.success) {
-            await bank_store(41, first[0]);
-          } else {
-            await bank_store(41, int[0], int[1]);
-          }
-        }
-      }
-    }
-
-    console.log("Sort Finished");
-    this.sorted = true;
-    await this.updateBankInfo();
-  } */
 
   needFarmerRun(): boolean {
     var go = false;
