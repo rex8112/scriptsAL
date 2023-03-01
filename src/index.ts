@@ -4,8 +4,6 @@
 // Just set attack_mode to true and ENGAGE!
 
 import { CodeMessageEvent } from "typed-adventureland";
-import { RunFarmer } from "./Farmer";
-import { RunMerchant } from "./Merchant";
 import { CMRequests } from "./CMRequests";
 import { CMTask } from "./Types";
 import { getItemPosition, getItemQuantity } from "./Utils";
