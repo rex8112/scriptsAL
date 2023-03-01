@@ -30,7 +30,7 @@ export interface VendorInstructions {
   buy: boolean;
   /** Whether or not to allow vendor selling this item. */
   sell: boolean;
-  /** If selling is allowed, how many should be kept. */
+  /** If selling is allowed, how many should be kept. -1 disables this.*/
   keep: number;
 }
 
