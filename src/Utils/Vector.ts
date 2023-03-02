@@ -45,6 +45,12 @@ export class Vector {
     return Math.sqrt(this.distanceFromSqr(other));
   }
 
+  /**
+   * Get a point that's distance away from this towards the target.
+   * @param target The vector to move towards.
+   * @param distance How far you want to be from this in the direction of the target.
+   * @returns The new vector.
+   */
   pointTowards(target: Vector, distance: number): Vector {
     let v = new Vector(target.x - this.x, target.y - this.y);
     let length = Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2));

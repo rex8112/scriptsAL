@@ -103,7 +103,7 @@ var LucasVendorInstructions: VendorInstructions = {
 }
 
 export var Items: {[name: string]: Item} = {
-
+  // Equipment
   helmet: {
     name: "helmet",
     meta: G.items["helmet"],
@@ -174,6 +174,7 @@ export var Items: {[name: string]: Item} = {
     }
   },
 
+  // Consumables
   hpot0: {
     name: "hpot0",
     meta: G.items["hpot0"],
