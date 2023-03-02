@@ -70,6 +70,16 @@ export function getFreeSlot(inventory: ItemInfo[], isize: number) {
   return slot
 }
 
+export function getFreeSlots(inventory: ItemInfo[], isize: number): number[] {
+  let slots = [];
+  for (let i = 0; i < isize; i++) {
+    if (!inventory[i]) {
+      slots.push(i);
+    }
+  }
+  return slots
+}
+
 var replenishing = false
 export function replenishPotions() {
   if (replenishing) return

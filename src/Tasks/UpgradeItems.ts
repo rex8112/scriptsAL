@@ -3,7 +3,7 @@ import { BankPosition } from "../Bank";
 import { MerchantCharacter } from "../Character";
 import { Items } from "../Items";
 import { BackgroundTask, Task, TaskController } from "../Tasks";
-import { getItemPosition, getItemQuantity } from "../Utils";
+import { getFreeSlots, getItemPosition, getItemQuantity } from "../Utils";
 
 export class CheckUpgrade extends BackgroundTask {
   name = "upgrade_check";
@@ -60,7 +60,7 @@ export class CheckUpgrade extends BackgroundTask {
 
     let items = this.findUpgradables();
     if (items.length > 0)
-      this.controller.enqueueTask(new UpgradeItems(this.char, /*items*/), 100);
+      this.controller.enqueueTask(new UpgradeItems(this.char, items), 100);
   }
 }
 
@@ -72,16 +72,16 @@ export class UpgradeItems extends Task {
   cancellable: boolean = false;
 
   char: MerchantCharacter;
-  //items: [getTo: number, items: BankPosition[]][];
+  items: [getTo: number, items: BankPosition[]][];
 
-  constructor(char: MerchantCharacter, /*items: [getTo: number, items: BankPosition[]][]*/) {
+  constructor(char: MerchantCharacter, items: [getTo: number, items: BankPosition[]][]) {
     super(char);
     this.char = char;
-    //this.items = items;
+    this.items = items;
   }
 
   getPriority(): number {
-    return this._priority;
+    return this._priority + Math.min(this.items.length * 10, 100);
   }
 
   isUpgradable(item: ItemInfo): boolean {
@@ -114,23 +114,33 @@ export class UpgradeItems extends Task {
   }
 
   async run_task(): Promise<void> {
-    var totalAttempts = 0;
-    await this.char.bank.getItems(this.isUpgradable);
-    var items = this.getUpgradableItems();
-    for (var i in items) totalAttempts += items[i][1];
-    var scrolls = getItemQuantity("scroll0", character.items, character.isize);
-    if (scrolls < totalAttempts) {
-      set_message("Restocking");
-      let grabbed = 0;
-      if (this.char.bank.items["scroll0"]) {
-        let newPositions = await this.char.bank.items["scroll0"].getItem(totalAttempts - scrolls);
-        newPositions.forEach((pos) => { grabbed += character.items[pos].q || 1 });
-      }
-      if (scrolls + grabbed < totalAttempts) {
-        await this.char.move("market");
-        this.char.buy("scroll0", totalAttempts - (scrolls + grabbed));
+    var normalAttempts = 0;
+    var highAttempts = 0;
+    var toUpgrade: [getTo: number, invPositions: number[]][] = [];
+
+    for (let [getTo, positions] of this.items) {
+      if (getFreeSlots(character.items, character.isize).length - 2 >= positions.length) {
+        let invPositions = await this.char.bank.getItemFromPositions(positions);
+        toUpgrade.push([getTo, invPositions]);
+
+        // To determine quantity of scrolls to buy.
+        for (let i of invPositions) {
+          let item = character.items[i];
+          let data = Items[item.name];
+          if (data.meta.grades === undefined || item.level === undefined) continue;
+
+          for (let x = item.level; x < getTo; x++) {
+            if (x < data.meta.grades[0])
+              normalAttempts++;
+            else if (x < data.meta.grades[1])
+              highAttempts++;
+          }
+
+        }
       }
     }
+    
+    /*
     await this.char.move("market");
     set_message("Upgrading");
     let returnItems = [];
@@ -147,6 +157,6 @@ export class UpgradeItems extends Task {
     }
     if (returnItems.length > 0)
       await this.char.bank.storeItems(returnItems);
-    await this.char.cleanInventory();
+    await this.char.cleanInventory();*/
   }
 }
