@@ -23,7 +23,7 @@ export class CheckUpgrade extends BackgroundTask {
 
   isUpgradable(item: ItemInfo): boolean {
     let i = Items[item.name];
-    if (i.upgrade !== undefined) return true;
+    if (i && i.upgrade) return true;
     return false;
   }
 
@@ -140,23 +140,60 @@ export class UpgradeItems extends Task {
       }
     }
     
-    /*
-    await this.char.move("market");
+    // Get possible scrolls from bank
+    var grabbed0, grabbed1;
+    var grabbedPos0, grabbedPos1;
+    if (normalAttempts > 0)
+      grabbed0 = await this.char.bank.items["scroll0"]?.getItem(normalAttempts);
+    if (highAttempts > 0)
+      grabbed1 = await this.char.bank.items["scroll1"]?.getItem(highAttempts);
+    if (grabbed0) {
+      let item = character.items[grabbed0[0]];
+      if (item && item.q) normalAttempts -= item.q;
+      grabbedPos0 = grabbed0[0];
+    }
+    if (grabbed1) {
+      let item = character.items[grabbed1[0]];
+      if (item && item.q) highAttempts -= item.q;
+      grabbedPos1 = grabbed1[0];
+    }
+
+    // Buy remainder
+    let [scroll0, scroll1] = await this.char.bulk_buy([["scroll0", normalAttempts], ["scroll1", highAttempts]]);
+    if (grabbedPos0) scroll0 = grabbedPos0;
+    if (grabbedPos1) scroll1 = grabbedPos1;
+
+    // Begin upgrading
     set_message("Upgrading");
+    await this.char.move("market");
+
     let returnItems = [];
-    for (var i in items) {
-      let pair = items[i];
-      let lastResult;
-      for (var y = 0; y < pair[1]; y++) {
-        lastResult = await upgrade(pair[0], <number>getItemPosition("scroll0", character.items, character.isize));
-        if (lastResult.success === false) break;
-      }
-      if (lastResult?.success) {
-        returnItems.push(lastResult.num);
+    for (let [getTo, positions] of toUpgrade) {
+      for (let pos of positions) {
+        let item = character.items[pos];
+        let data = Items[item.name];
+        if (item.level === undefined || data.meta.grades === undefined) continue;
+
+        let scrollPos;
+        if (item.level < data.meta.grades[0]) {
+          scrollPos = scroll0;
+        } else if (item.level < data.meta.grades[1]) {
+          scrollPos = scroll1;
+        } else continue;
+        let result;
+        for (let i = item.level; i < getTo; i++) {
+          result = await upgrade(pos, scrollPos);
+          if (result.success !== true) break;
+        }
+        if (result && result.success === true)
+          returnItems.push(pos);
       }
     }
+
+    if (character.items[scroll0]) returnItems.push(scroll0);
+    if (character.items[scroll1]) returnItems.push(scroll1);
+
     if (returnItems.length > 0)
       await this.char.bank.storeItems(returnItems);
-    await this.char.cleanInventory();*/
   }
 }

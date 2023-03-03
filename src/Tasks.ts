@@ -133,14 +133,18 @@ export class TaskController {
   }
 
   taskEnqueued(taskName: string): boolean {
-    for (var id in this.tasks) {
+    for (let id in this.tasks) {
       let task = this.tasks[id];
+      if (task.name == taskName) return true;
+    }
+    for (let id in this.backgroundTasks) {
+      let task = this.backgroundTasks[id];
       if (task.name == taskName) return true;
     }
     return false;
   }
 
-  enqueueTask(task: Task, priority: number): number {
+  enqueueTask(task: Task, priority: number = 0): number {
     if (this.taskEnqueued(task.name)) return 0;
     task.initialize(this.idCount);
     task.Priority = priority;

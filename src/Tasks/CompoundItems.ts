@@ -76,7 +76,7 @@ export class CompoundItems extends Task {
     var scrolls = getItemQuantity("cscroll0", character.items, character.isize);
     if (scrolls < totalAttempts) {
       set_message("Restocking");
-      this.char.buy("cscroll0", totalAttempts - scrolls);
+      await this.char.buy("cscroll0", totalAttempts - scrolls);
     }
     await this.char.move("market");
     set_message("Compounding");

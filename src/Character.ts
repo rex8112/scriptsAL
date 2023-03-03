@@ -7,7 +7,7 @@ import { getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils";
 import { Bank, BankPosition } from "./Bank";
 import { TaskController } from "./Tasks";
 import { CompoundItems } from "./Tasks/CompoundItems";
-import { UpgradeItems } from "./Tasks/UpgradeItems";
+import { CheckUpgrade, UpgradeItems } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Vector } from "./Utils/Vector";
 import { Items } from "./Items";
@@ -185,16 +185,14 @@ export class MerchantCharacter extends BaseCharacter {
       this.standTask = setInterval(() => { this.open_close_stand() }, 150);
     if (this.inspectMerchantTask === null)
       this.inspectMerchantTask = setInterval(() => { this.inspectNearbyMerchants() }, 5_000);
+    
+    this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
   }
 
   async run() {
     if (this.bank.noInfo()) await this.bank.updateInfo();
 
     if (this.getCompoundableItemsFromBank().length > 0) this.taskController.enqueueTask(new CompoundItems(this), 100);
-
-    if (this.getUpgradableItems().length > 0 
-        || this.getUpgradableItemsInBank().length > 0)
-      this.taskController.enqueueTask(new UpgradeItems(this), 100);
 
     if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 200);
   }
@@ -258,26 +256,27 @@ export class MerchantCharacter extends BaseCharacter {
     await this.cleanInventory();
   }
 
-  async buy(item: ItemKey, amount: number): Promise<boolean> {
+  async buy(item: ItemKey, amount: number): Promise<number> {
+    if (amount === 0) return -1;
     let i = Items[item];
-    if (i === undefined || !i.vendor?.buy) return false;
+    if (i === undefined || !i.vendor?.buy) return -1;
     let neededGold = amount * i.price;
     if (neededGold > character.gold) {
       if (this.bank.gold >= neededGold - character.gold)
         await this.bank.withdrawGold(neededGold - character.gold);
       else
-        return false;
+        return -1;
     }
     await this.move(i.vendor.location);
-    buy_with_gold(item, amount);
-    return true;
+    let data = await buy_with_gold(item, amount);
+    return data.num;
   }
 
-  async bulk_buy(items: [item: ItemKey, amount: number][]): Promise<boolean> {
+  async bulk_buy(items: [item: ItemKey, amount: number][]): Promise<number[]> {
     let totalGold = 0;
     for (let [item, amount] of items) {
       let i = Items[item];
-      if (i === undefined || !i.vendor?.buy) return false;
+      if (i === undefined || !i.vendor?.buy) return [];
       totalGold += amount * i.price;
     }
 
@@ -285,15 +284,18 @@ export class MerchantCharacter extends BaseCharacter {
       if (this.bank.gold >= totalGold - character.gold)
         await this.bank.withdrawGold(totalGold - character.gold);
       else
-        return false;
+        return [];
     }
 
+    let nums = [];
     for (let [item, amount] of items) {
+      if (amount <= 0) continue;
       let i = Items[item];
       if (i.vendor) await this.move(i.vendor.location);
-      await buy_with_gold(item, amount);
+      let data = await buy_with_gold(item, amount);
+      nums.push(data.num);
     }
-    return true;
+    return nums;
   }
 
   async compoundItems() {
