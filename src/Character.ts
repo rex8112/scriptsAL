@@ -289,7 +289,10 @@ export class MerchantCharacter extends BaseCharacter {
 
     let nums = [];
     for (let [item, amount] of items) {
-      if (amount <= 0) continue;
+      if (amount <= 0) {
+        nums.push(-1);
+        continue;
+      }
       let i = Items[item];
       if (i.vendor) await this.move(i.vendor.location);
       let data = await buy_with_gold(item, amount);
