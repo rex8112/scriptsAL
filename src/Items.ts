@@ -1,4 +1,4 @@
-import { GItem, ItemKey, MapKey, MonsterKey } from "typed-adventureland";
+import { GCraft, GItem, ItemKey, MapKey, MonsterKey } from "typed-adventureland";
 import { MoverDestination } from "./Mover";
 
 export interface UpgradeInstructions {
@@ -51,6 +51,7 @@ export interface Item {
   upgrade?: UpgradeInstructions;
   compound?: CompoundInstructions;
   vendor?: VendorInstructions;
+  crafting?: GCraft;
 }
 
 export function getMapDrops(item: ItemKey): MapDropRate[] {
@@ -172,6 +173,32 @@ export var Items: {[name: string]: Item} = {
       primling: 20,
       primordial: 20
     }
+  },
+
+  firestaff: {
+    name: "firestaff",
+    meta: G.items["firestaff"],
+    price: G.items["firestaff"].g,
+    upgrade: {
+      keep: 6,
+      max: 8,
+      primling: 20,
+      primordial: 20
+    },
+    crafting: G.craft["firestaff"]
+  },
+
+  fireblade: {
+    name: "fireblade",
+    meta: G.items["fireblade"],
+    price: G.items["fireblade"].g,
+    upgrade: {
+      keep: 6,
+      max: 8,
+      primling: 20,
+      primordial: 20
+    },
+    crafting: G.craft["fireblade"]
   },
 
   // Consumables
