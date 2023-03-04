@@ -89,6 +89,7 @@ export class BaseCharacter {
 
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
+  mon_type = "snake";
 
   setLeader(leader: string) {
     super.setLeader(leader);
@@ -120,11 +121,11 @@ export class FarmerCharacter extends BaseCharacter {
     } else if (this.mode == "leader") {
       let target = get_targeted_monster();
       if (target === null) {
-        target = get_nearest_monster({no_target: true, type: "bee"});
+        target = get_nearest_monster({no_target: true, type: this.mon_type});
       }
       if (target === null) {
-        await this.move("bee");
-        target = get_nearest_monster({no_target: true, type: "bee"});
+        await this.move(this.mon_type);
+        target = get_nearest_monster({no_target: true, type: this.mon_type});
       }
       if (target === null) return;
 
