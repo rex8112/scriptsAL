@@ -134,30 +134,48 @@ export class FarmerCharacter extends BaseCharacter {
 
   async attack(target: Entity) {
     change_target(target);
+    let k = setInterval(() => { this.kite(target) }, 250);
     while (target.dead === undefined) {
       if (can_attack(target)) {
         set_message("Attacking");
         attack(target);
-      } else {
-        let cPos = Vector.fromRealPosition(character);
-        let tPos = Vector.fromRealPosition(target);
-        let dist = cPos.distanceFrom(tPos);
-        
-        let distanceToBe;
-        if (character.range > target.range) {
-          distanceToBe = (character.range + target.range) / 2;
-        } else {
-          distanceToBe = character.range - 10;
-        }
-
-        if(!is_moving(character) && (dist !== distanceToBe) && Mover.stopped) {
-          let moveTo = tPos.pointTowards(cPos, distanceToBe);
-          this.move(moveTo);
-        }
       }
-
       await sleep(250);
     }
+    clearInterval(k);
+  }
+
+  async kite(target: Entity) {
+    let tries = 0;
+    let free = false;
+    let pos = Vector.fromRealPosition(character);
+
+    for (let id in parent.entities) {
+      let entity = parent.entities[id];
+      if (entity.type !== "monster") continue;
+      let entityPos = Vector.fromRealPosition(entity);
+      let distanceToBe;
+      if (character.range > entity.range) {
+        distanceToBe = (character.range + entity.range) / 2;
+      } else {
+        distanceToBe = character.range - 10;
+      }
+
+      let move = false;
+      let squared = distanceToBe * distanceToBe;
+      let distanceSquared = entityPos.distanceFromSqr(pos);
+      if (entity == target) {
+        if (distanceSquared !== squared) move = true;
+      } else {
+        if (distanceSquared < squared) move = true;
+      }
+
+      if (move) {
+        pos = entityPos.pointTowards(pos, distanceToBe);
+      }
+    }
+
+    this.move(pos);
   }
 }
 
@@ -192,7 +210,7 @@ export class MerchantCharacter extends BaseCharacter {
   async run() {
     if (this.bank.noInfo()) await this.bank.updateInfo();
 
-    if (this.getCompoundableItemsFromBank().length > 0) this.taskController.enqueueTask(new CompoundItems(this), 100);
+    //if (this.getCompoundableItemsFromBank().length > 0) this.taskController.enqueueTask(new CompoundItems(this), 100);
 
     if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 200);
   }
