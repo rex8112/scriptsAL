@@ -159,9 +159,9 @@ export class UpgradeItems extends Task {
     }
 
     // Buy remainder
-    let [scroll0, scroll1] = await this.char.bulk_buy([["scroll0", normalAttempts], ["scroll1", highAttempts]]);
-    if (grabbedPos0) scroll0 = grabbedPos0;
-    if (grabbedPos1) scroll1 = grabbedPos1;
+    await this.char.bulk_buy([["scroll0", normalAttempts], ["scroll1", highAttempts]]);
+    let scroll0 = getItemPosition("scroll0", character.items, character.isize);
+    let scroll1 = getItemPosition("scroll1", character.items, character.isize);
 
     // Begin upgrading
     set_message("Upgrading");
@@ -174,14 +174,15 @@ export class UpgradeItems extends Task {
         let data = Items[item.name];
         if (item.level === undefined || data.meta.grades === undefined) continue;
 
-        let scrollPos;
-        if (item.level < data.meta.grades[0]) {
-          scrollPos = scroll0;
-        } else if (item.level < data.meta.grades[1]) {
-          scrollPos = scroll1;
-        } else continue;
         let result;
         for (let i = item.level; i < getTo; i++) {
+          let scrollPos;
+          if (item.level < data.meta.grades[0]) {
+            scrollPos = <number>scroll0;
+          } else if (item.level < data.meta.grades[1]) {
+            scrollPos = <number>scroll1;
+          } else continue;
+          
           result = await upgrade(pos, scrollPos);
           if (result.success !== true) break;
         }
@@ -190,8 +191,8 @@ export class UpgradeItems extends Task {
       }
     }
 
-    if (character.items[scroll0]) returnItems.push(scroll0);
-    if (character.items[scroll1]) returnItems.push(scroll1);
+    if (scroll0 !== null && character.items[scroll0]) returnItems.push(scroll0);
+    if (scroll1 !== null && character.items[scroll1]) returnItems.push(scroll1);
 
     if (returnItems.length > 0)
       await this.char.bank.storeItems(returnItems);
