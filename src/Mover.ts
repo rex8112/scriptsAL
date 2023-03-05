@@ -116,6 +116,7 @@ export class Mover {
   static async move_by_path(destination: MoverDestination) {
     Mover._stopping = false;
     Mover.stopped = false;
+    console.log("Fetching Location", destination);
     let data = await Mover.get_path({x: Math.round(character.x), y: Math.round(character.y), map: character.map}, destination);
 
     if (data == null || data.path ==  null) {
@@ -169,7 +170,7 @@ export class Mover {
       {
         await transport(<MapKey>step.action_target, Number(step.target_spawn));
         await sleep(100);
-        while(is_transporting(character))
+        while(is_transporting(character) && character.map !== step.action_target)
           await sleep(100);
         await sleep(500);
       }
