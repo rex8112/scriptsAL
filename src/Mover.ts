@@ -170,7 +170,7 @@ export class Mover {
       {
         await transport(<MapKey>step.action_target, Number(step.target_spawn));
         await sleep(100);
-        while(is_transporting(character) && character.map !== step.action_target)
+        while(is_transporting(character))
           await sleep(100);
         await sleep(500);
       }

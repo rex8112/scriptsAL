@@ -6,7 +6,7 @@ import { CharacterMessager } from "./CharacterMessager";
 import { getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils";
 import { Bank, BankPosition } from "./Bank";
 import { TaskController } from "./Tasks";
-import { CompoundItems } from "./Tasks/CompoundItems";
+import { CheckCompound, CompoundItems } from "./Tasks/CompoundItems";
 import { CheckUpgrade, UpgradeItems } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Vector } from "./Utils/Vector";
@@ -89,7 +89,7 @@ export class BaseCharacter {
 
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
-  mon_type = "snake";
+  mon_type = "minimush";
 
   setLeader(leader: string) {
     super.setLeader(leader);
@@ -176,7 +176,7 @@ export class FarmerCharacter extends BaseCharacter {
       }
     }
 
-    this.move(pos);
+    move(pos.x, pos.y);
   }
 }
 
@@ -206,14 +206,18 @@ export class MerchantCharacter extends BaseCharacter {
       this.inspectMerchantTask = setInterval(() => { this.inspectNearbyMerchants() }, 5_000);
     
     this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
+    this.taskController.enqueueTask(new CheckCompound(this, this.taskController));
   }
 
   async run() {
-    if (this.bank.noInfo()) await this.bank.updateInfo();
+    if (this.bank.noInfo()) {
+      await this.bank.updateInfo();
+      await sleep(1_000);
+    }
 
     //if (this.getCompoundableItemsFromBank().length > 0) this.taskController.enqueueTask(new CompoundItems(this), 100);
 
-    if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 200);
+    if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 500);
   }
 
   open_close_stand() {
@@ -291,11 +295,27 @@ export class MerchantCharacter extends BaseCharacter {
     return data.num;
   }
 
-  async bulk_buy(items: [item: ItemKey, amount: number][]): Promise<number[]> {
+  async bulk_buy(items: [item: ItemKey, amount: number][], allowBank: boolean = false): Promise<number[]> {
     let totalGold = 0;
-    for (let [item, amount] of items) {
+    let nums: number[] = [];
+    for (let index in items) {
+      let [item, amount] = items[index];
       let i = Items[item];
       if (i === undefined || !i.vendor?.buy) return [];
+
+      if (allowBank && amount > 0) {
+        let b = this.bank.items[item];
+        if (b !== undefined) {
+          let results = await b.getItem(amount);
+          results.forEach((pos) => { 
+            let item = character.items[pos];
+            amount -= item.q || 1;
+            items[index][1] -= item.q || 1;
+            if (nums.indexOf(pos) === -1)
+              nums.push(pos);
+          });
+        }
+      }
       totalGold += amount * i.price;
     }
 
@@ -305,8 +325,7 @@ export class MerchantCharacter extends BaseCharacter {
       else
         return [];
     }
-
-    let nums = [];
+    
     for (let [item, amount] of items) {
       if (amount <= 0) {
         nums.push(-1);
@@ -315,7 +334,8 @@ export class MerchantCharacter extends BaseCharacter {
       let i = Items[item];
       if (i.vendor) await this.move(i.vendor.location);
       let data = await buy_with_gold(item, amount);
-      nums.push(data.num);
+      if (nums.indexOf(data.num) === -1)
+        nums.push(data.num);
     }
     return nums;
   }
@@ -434,8 +454,9 @@ export class MerchantCharacter extends BaseCharacter {
 
   getTakableItems(char: LocalChacterInfo): [number, number][] {
     var items: [number, number][] = [];
+    let save = ["hpot0", "mpot0"];
     for (let i = 0; i < char.isize; i++) {
-      if (char.items[i] && MerchantCharacter.itemsToTake.includes(char.items[i].name))
+      if (char.items[i] && !save.includes(char.items[i].name))
         items.push([i, char.items[i].q || 1]);
     }
     return items;
