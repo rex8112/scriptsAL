@@ -103,6 +103,13 @@ var LucasVendorInstructions: VendorInstructions = {
   keep: 1000
 }
 
+var WanderersUpgradeInstructions: UpgradeInstructions = {
+  keep: 3,
+  max: 9,
+  primling: 20,
+  primordial: 20
+}
+
 export var Items: {[name: string]: Item} = {
   // Equipment
   helmet: {
@@ -145,6 +152,48 @@ export var Items: {[name: string]: Item} = {
     vendor: GabrialVendorInstructions
   },
 
+  // Wanderer's Set
+  wcap: {
+    name: "wcap",
+    meta: G.items["wcap"],
+    price: G.items["wcap"].g,
+    crafting: G.craft["wcap"],
+    upgrade: WanderersUpgradeInstructions
+  },
+
+  wattire: {
+    name: "wattire",
+    meta: G.items["wattire"],
+    price: G.items["wattire"].g,
+    crafting: G.craft["wattire"],
+    upgrade: WanderersUpgradeInstructions
+  },
+
+  wbreeches: {
+    name: "wbreeches",
+    meta: G.items["wbreeches"],
+    price: G.items["wbreeches"].g,
+    crafting: G.craft["wbreeches"],
+    upgrade: WanderersUpgradeInstructions
+  },
+
+  wgloves: {
+    name: "wgloves",
+    meta: G.items["wgloves"],
+    price: G.items["wgloves"].g,
+    crafting: G.craft["wgloves"],
+    upgrade: WanderersUpgradeInstructions
+  },
+
+  wshoes: {
+    name: "wshoes",
+    meta: G.items["wshoes"],
+    price: G.items["wshoes"].g,
+    crafting: G.craft["wshoes"],
+    upgrade: WanderersUpgradeInstructions
+  },
+
+  // Weapons
   stinger: {
     name: "stinger",
     meta: G.items["stinger"],
@@ -163,18 +212,25 @@ export var Items: {[name: string]: Item} = {
     }
   },
 
-  ringsj: {
-    name: "ringsj",
-    meta: G.items["ringsj"],
-    price: G.items["ringsj"].g,
-    compound: {
-      keep: 6,
-      max: 5,
+  mushroomstaff: {
+    name: "mushroomstaff",
+    meta: G.items["mushroomstaff"],
+    price: G.items["mushroomstaff"].g,
+    upgrade: {
+      keep: 2,
+      max: 8,
       primling: 20,
       primordial: 20
+    },
+    vendor: {
+      location: "market",
+      buy: false,
+      sell: true,
+      keep: 2
     }
   },
 
+  // Fire Weapons
   firestaff: {
     name: "firestaff",
     meta: G.items["firestaff"],
@@ -199,6 +255,67 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     crafting: G.craft["fireblade"]
+  },
+
+  // Accessories
+  ringsj: {
+    name: "ringsj",
+    meta: G.items["ringsj"],
+    price: G.items["ringsj"].g,
+    compound: {
+      keep: 3,
+      max: 3,
+      primling: 20,
+      primordial: 20
+    }
+  },
+
+  hpamulet: {
+    name: "hpamulet",
+    meta: G.items["hpamulet"],
+    price: G.items["hpamulet"].g,
+    compound: {
+      keep: 3,
+      max: 3,
+      primling: 20,
+      primordial: 20
+    }
+  },
+
+  hpbelt: {
+    name: "hpbelt",
+    meta: G.items["hpbelt"],
+    price: G.items["hpbelt"].g,
+    compound: {
+      keep: 3,
+      max: 3,
+      primling: 20,
+      primordial: 20
+    }
+  },
+
+  intamulet: {
+    name: "intamulet",
+    meta: G.items["intamulet"],
+    price: G.items["intamulet"].g,
+    compound: {
+      keep: 3,
+      max: 3,
+      primling: 20,
+      primordial: 20
+    }
+  },
+
+  stramulet: {
+    name: "stramulet",
+    meta: G.items["stramulet"],
+    price: G.items["stramulet"].g,
+    compound: {
+      keep: 3,
+      max: 3,
+      primling: 20,
+      primordial: 20
+    }
   },
 
   // Consumables
