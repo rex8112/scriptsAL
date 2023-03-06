@@ -318,6 +318,18 @@ export var Items: {[name: string]: Item} = {
     }
   },
 
+  dexamulet: {
+    name: "dexamulet",
+    meta: G.items["dexamulet"],
+    price: G.items["dexamulet"].g,
+    compound: {
+      keep: 3,
+      max: 3,
+      primling: 20,
+      primordial: 20
+    }
+  },
+
   // Consumables
   hpot0: {
     name: "hpot0",
