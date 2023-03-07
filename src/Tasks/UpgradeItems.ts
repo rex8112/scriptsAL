@@ -3,7 +3,7 @@ import { BankPosition } from "../Bank";
 import { MerchantCharacter } from "../Character";
 import { Items } from "../Items";
 import { BackgroundTask, Task, TaskController } from "../Tasks";
-import { getFreeSlots, getItemPosition, getItemQuantity } from "../Utils";
+import { getFreeSlots, getItemPosition, getItemQuantity } from "../Utils/Functions";
 
 export class CheckUpgrade extends BackgroundTask {
   name = "upgrade_check";

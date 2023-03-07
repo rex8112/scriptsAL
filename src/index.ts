@@ -6,7 +6,7 @@
 import { CodeMessageEvent } from "typed-adventureland";
 import { CMRequests } from "./CMRequests";
 import { CMTask } from "./Types";
-import { getItemPosition, getItemQuantity } from "./Utils";
+import { getItemPosition, getItemQuantity } from "./Utils/Functions";
 import { BaseCharacter, FarmerCharacter, MerchantCharacter } from "./Character";
 /* var CMR = new CMRequests(async (request) => {
   var message: CMTask = request.message;

@@ -1,6 +1,6 @@
 import { BankPackTypeItemsOnly, CharacterBankInfos, ItemInfo, ItemKey, MapKey } from "typed-adventureland";
 import { BaseCharacter } from "./Character";
-import { getFreeSlot } from "./Utils";
+import { getFreeSlot } from "./Utils/Functions";
 
 export type BankPosition = [pack: BankPack, pos: number, item: ItemData];
 

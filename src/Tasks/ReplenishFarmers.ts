@@ -1,6 +1,6 @@
 import { MerchantCharacter } from "../Character";
 import { Task } from "../Tasks";
-import { getItemPosition, getItemQuantity, getPosition, get_position, moveToCharacter } from "../Utils";
+import { getItemPosition, getItemQuantity, getPosition, get_position, moveToCharacter } from "../Utils/Functions";
 
 export class ReplenishFarmersTask extends Task {
   name = "replenish_farmers";

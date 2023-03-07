@@ -3,7 +3,7 @@ import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
 import { LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
-import { getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils";
+import { getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
 import { Bank, BankPosition } from "./Bank";
 import { TaskController } from "./Tasks";
 import { CheckCompound, CompoundItems } from "./Tasks/CompoundItems";
