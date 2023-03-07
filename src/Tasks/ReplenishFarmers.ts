@@ -1,6 +1,6 @@
 import { MerchantCharacter } from "../Character";
 import { Task } from "../Tasks";
-import { getItemPosition, getItemQuantity, get_position } from "../Utils";
+import { getItemPosition, getItemQuantity, getPosition, get_position, moveToCharacter } from "../Utils";
 
 export class ReplenishFarmersTask extends Task {
   name = "replenish_farmers";
@@ -66,14 +66,7 @@ export class ReplenishFarmersTask extends Task {
     for (var name in characterInfo) {
       var char = characterInfo[name];
       if (name == character.name || !Object.keys(this.char.characterInfo).includes(name)) continue;
-      let position = get_position(char);
-      while (simple_distance(character, position) > 400) {
-        if (this._cancelling) return;
-
-        position = get_position(char);
-        await this.char.move(position);
-        await sleep(150);
-      }
+      if (!await moveToCharacter(this.char, char.name)) continue;
       let promises = [];
       let items = this.char.getTakableItems(char).slice(0, 10);
 

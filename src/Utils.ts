@@ -1,5 +1,8 @@
-import { IPosition, ItemInfo } from "typed-adventureland"
+import { IPosition, ItemInfo, PositionReal } from "typed-adventureland"
+import { BaseCharacter } from "./Character"
 import { LocalChacterInfo } from "./Types"
+import { Location } from "./Utils/Location"
+import { Vector } from "./Utils/Vector"
 
 var lastPotion = new Date()
 export function smartUseHpOrMp() {
@@ -107,6 +110,44 @@ export function replenishPotions() {
 
 export function get_position(char: LocalChacterInfo): IPosition {
   return get(`${char.name}_pos`);
+}
+
+export async function moveToCharacter(char: BaseCharacter, id: string): Promise<boolean> {
+  let position = getPosition(id);
+  if (!position) return false;
+  while (Vector.fromRealPosition(character).distanceFromSqr(position.vector) > 50 * 50) {
+    await char.move(position.asPosition());
+    await sleep(100);
+    position = getPosition(id);
+    if (!position) return false;
+  }
+  return true;
+}
+
+export function getCharacter(id: string): Character | null {
+  if (!top) return null;
+  for (let i of top.$("iframe")) {
+    let iframe = <any>i;
+    let char: Character = iframe.contentWindow.character;
+    if (!char) continue;
+    if (char.name == id) return char;
+  }
+  return null;
+}
+
+export function getPosition(id: string): Location | null {
+  if(parent.entities[id]) return Location.fromEntity(parent.entities[id]);
+  let char = getCharacter(id);
+  if (char) return Location.fromEntity(char);
+  
+  if (get(`${id}_position`)) {
+    return Location.fromPosition(get(`${id}_position`));
+  } else return null;
+}
+
+export function savePosition() {
+  let loc = Location.fromEntity(character);
+  return set(`${character.id}_position`, loc.asPosition());
 }
 
 function min(arg0: number, arg1: number): number {
