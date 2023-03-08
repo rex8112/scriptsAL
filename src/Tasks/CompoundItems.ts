@@ -29,13 +29,11 @@ export class CheckCompound extends BackgroundTask {
   findCompoundables(): [first: BankPosition, second: BankPosition, third: BankPosition][] {
     let positions = this.char.bank.findItems(this.isCompoundable);
     let items: {[name: string]: [BankPosition, number][]} = {};
-    console.log(positions);
     positions.forEach((pos) => {
       let name = pos[2].name;
       if (items[name] === undefined) items[name] = [];
       items[name].push([pos, <number>pos[2].level]);
     });
-    console.log(items);
 
     let positionsToReturn: [first: BankPosition, second: BankPosition, third: BankPosition][] = [];
     let leveledItems: {[key: string]: BankPosition[]} = {};
@@ -58,7 +56,6 @@ export class CheckCompound extends BackgroundTask {
         leveledItems[key].push(pos[0]);
       }
     }
-    console.log(leveledItems);
 
     for (let key in leveledItems) {
       let positions = leveledItems[key];
@@ -70,7 +67,6 @@ export class CheckCompound extends BackgroundTask {
         positionsToReturn.push([positions[x], positions[x+1], positions[x+2]]);
       }
     }
-    console.log(positionsToReturn);
     return positionsToReturn;
   }
 
