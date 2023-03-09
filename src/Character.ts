@@ -1,4 +1,4 @@
-import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, Entity, IPosition, ItemInfo, ItemKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
+import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, Entity, IPosition, ItemInfo, ItemKey, MonsterKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
 import { LocalChacterInfo } from "./Types";
@@ -11,6 +11,7 @@ import { CheckUpgrade, UpgradeItems } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Vector } from "./Utils/Vector";
 import { Items } from "./Items";
+import { Location } from "./Utils/Location";
 
 export class BaseCharacter {
   original: Character;
@@ -34,6 +35,10 @@ export class BaseCharacter {
     this.bank = new Bank(this);
     this.taskController = new TaskController(this);
     this.taskController.run();
+  }
+
+  get Position(): Location {
+    return Location.fromEntity(character);
   }
 
   startTasks() {
@@ -89,7 +94,10 @@ export class BaseCharacter {
 
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
-  mon_type = "minimush";
+  attack_mode: "single" | "multiple" = "single";
+  default_type: MonsterKey = "minimush";
+  current_type: MonsterKey = this.default_type;
+  goals: {mon_type: MonsterKey, for: {item: ItemKey, amount: number}[]} | undefined;
 
   setLeader(leader: string) {
     super.setLeader(leader);
@@ -121,16 +129,27 @@ export class FarmerCharacter extends BaseCharacter {
     } else if (this.mode == "leader") {
       let target = get_targeted_monster();
       if (target === null) {
-        target = get_nearest_monster({no_target: true, type: this.mon_type});
+        target = get_nearest_monster({no_target: true, type: this.default_type});
       }
       if (target === null) {
-        await this.move(this.mon_type);
-        target = get_nearest_monster({no_target: true, type: this.mon_type});
+        await this.move(this.default_type);
+        target = get_nearest_monster({no_target: true, type: this.default_type});
       }
       if (target === null) return;
 
       await this.attack(target);
     }
+  }
+
+  async find_target() {
+    let target = get_targeted_monster();
+    if (target !== null) return target;
+
+    for (let id in parent.entities) {
+      let entity = parent.entities[id];
+      if (entity.mtype !== this.current_type) continue;
+    }
+    // TODO
   }
 
   async attack(target: Entity) {
