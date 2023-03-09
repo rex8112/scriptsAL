@@ -13,7 +13,7 @@ export class Location {
   }
 
   static fromEntity(ent: Entity) {
-    let v = Vector.fromRealPosition(ent);
+    let v = Vector.fromEntity(ent);
     return new Location(v, ent.map, ent.in);
   }
 

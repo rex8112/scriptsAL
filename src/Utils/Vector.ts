@@ -11,7 +11,7 @@ export class Vector {
     return new Vector(pos.x, pos.y);
   }
 
-  static fromRealPosition(pos: {real_x: number, real_y: number}): Vector {
+  static fromEntity(pos: {real_x: number, real_y: number}): Vector {
     return new Vector(pos.real_x, pos.real_y);
   }
 

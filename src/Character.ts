@@ -127,13 +127,10 @@ export class FarmerCharacter extends BaseCharacter {
 
       await this.attack(t);
     } else if (this.mode == "leader") {
-      let target = get_targeted_monster();
+      let target = await this.find_target();
       if (target === null) {
-        target = get_nearest_monster({no_target: true, type: this.default_type});
-      }
-      if (target === null) {
-        await this.move(this.default_type);
-        target = get_nearest_monster({no_target: true, type: this.default_type});
+        await this.move(this.current_type);
+        target = await this.find_target();
       }
       if (target === null) return;
 
@@ -142,14 +139,29 @@ export class FarmerCharacter extends BaseCharacter {
   }
 
   async find_target() {
+    let cpos = Vector.fromEntity(character);
     let target = get_targeted_monster();
     if (target !== null) return target;
 
     for (let id in parent.entities) {
       let entity = parent.entities[id];
+      let epos = Vector.fromEntity(entity);
+      let new_target = null;
       if (entity.mtype !== this.current_type) continue;
+      if (!entity.target) new_target = entity;
+      else if (entity.target && parent.entities[entity.target].ctype === "merchant") {
+        // Override any check. SAVE THE MERCHANT!
+        target = entity;
+        break;
+      } else if (this.attack_mode === "single" && Object.keys(get_party()).includes(entity.target)) {
+        new_target = entity;
+      } else if (this.attack_mode === "multiple" && !Object.keys(get_party()).includes(entity.target)) {
+        new_target = entity;
+      }
+      if (target === null) target = new_target;
+      else if (new_target && cpos.distanceFromSqr(epos) < cpos.distanceFromSqr(Vector.fromEntity(target))) target = new_target;
     }
-    // TODO
+    return target;
   }
 
   async attack(target: Entity) {
@@ -168,12 +180,12 @@ export class FarmerCharacter extends BaseCharacter {
   async kite(target: Entity) {
     let tries = 0;
     let free = false;
-    let pos = Vector.fromRealPosition(character);
+    let pos = Vector.fromEntity(character);
 
     for (let id in parent.entities) {
       let entity = parent.entities[id];
       if (entity.type !== "monster") continue;
-      let entityPos = Vector.fromRealPosition(entity);
+      let entityPos = Vector.fromEntity(entity);
       let distanceToBe;
       if (character.range > entity.range) {
         distanceToBe = (character.range + entity.range) / 2;
