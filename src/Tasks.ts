@@ -108,14 +108,15 @@ export class TaskController {
       set_message(task_to_run.displayName);
       this.running = true;
       console.log("Running task", task_to_run.displayName);
-      game_log(`Starting Task: ${task_to_run.displayName}`);
+      game_log(`Starting Task: ${task_to_run.displayName}`, "orange");
       try {
         await task_to_run.run();
       } catch (error) {
         console.error(`Error in ${task_to_run.name}`, error);
+        game_log(`Error in Task: ${task_to_run.displayName}`, "red");
       }
+      game_log(`Finished Task: ${task_to_run.displayName}`, "orange");
       this.running = false;
-      game_log(`Finished Task: ${task_to_run.displayName}`);
       set_message("Finished");
       delete this.tasks[task_to_run.id];
     } else if (task_to_run === undefined && this._pause == false) {
