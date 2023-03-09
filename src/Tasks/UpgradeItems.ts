@@ -177,6 +177,7 @@ export class UpgradeItems extends Task {
         let result;
         for (let i = item.level; i < getTo; i++) {
           let scrollPos;
+          console.log("Item Level: ", item.level);
           if (item.level < data.meta.grades[0]) {
             scrollPos = <number>scroll0;
           } else if (item.level < data.meta.grades[1]) {

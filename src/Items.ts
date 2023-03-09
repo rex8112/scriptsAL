@@ -299,7 +299,7 @@ export var Items: {[name: string]: Item} = {
     meta: G.items["intamulet"],
     price: G.items["intamulet"].g,
     compound: {
-      keep: 3,
+      keep: 2,
       max: 3,
       primling: 20,
       primordial: 20
@@ -311,7 +311,7 @@ export var Items: {[name: string]: Item} = {
     meta: G.items["stramulet"],
     price: G.items["stramulet"].g,
     compound: {
-      keep: 3,
+      keep: 1,
       max: 3,
       primling: 20,
       primordial: 20
@@ -323,7 +323,7 @@ export var Items: {[name: string]: Item} = {
     meta: G.items["dexamulet"],
     price: G.items["dexamulet"].g,
     compound: {
-      keep: 3,
+      keep: 1,
       max: 3,
       primling: 20,
       primordial: 20
