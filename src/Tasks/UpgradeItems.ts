@@ -177,10 +177,11 @@ export class UpgradeItems extends Task {
         let result;
         for (let i = item.level; i < getTo; i++) {
           let scrollPos;
+          let level = <number>character.items[pos].level;
           console.log("Item Level: ", item.level);
-          if (item.level < data.meta.grades[0]) {
+          if (level < data.meta.grades[0]) {
             scrollPos = <number>scroll0;
-          } else if (item.level < data.meta.grades[1]) {
+          } else if (level < data.meta.grades[1]) {
             scrollPos = <number>scroll1;
           } else continue;
           
