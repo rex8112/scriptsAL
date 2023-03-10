@@ -149,8 +149,8 @@ export class FarmerCharacter extends BaseCharacter {
       let new_target = null;
       if (entity.mtype !== this.current_type) continue;
       if (!entity.target) new_target = entity;
-      else if (entity.target && parent.entities[entity.target].ctype === "merchant") {
-        // Override any check. SAVE THE MERCHANT!
+      else if (parent.entities[entity.target].ctype === "merchant") {
+        // Override any future checks. SAVE THE MERCHANT!
         target = entity;
         break;
       } else if (this.attack_mode === "single" && Object.keys(get_party()).includes(entity.target)) {

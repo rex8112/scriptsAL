@@ -188,7 +188,9 @@ export class Bank {
   async storeItems(ipos: number[]): Promise<number> {
     ipos.sort((a, b) => a - b);
     let stored = 0;
-    for (let pos of ipos) {
+    let length = ipos.length;
+    for (let i = 0; i < length; i++) {
+      let pos = ipos[i];
       let item = character.items[pos];
       if (item === undefined) {
         console.log("Can't store undefined: ", pos);
