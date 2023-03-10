@@ -190,10 +190,10 @@ export class Bank {
     let stored = 0;
     let length = ipos.length;
     for (let i = 0; i < length; i++) {
-      let pos = ipos[i];
-      let item = character.items[pos];
+      let orgPos = ipos[i];
+      let item = character.items[orgPos];
       if (item === undefined) {
-        console.log("Can't store undefined: ", pos);
+        console.log("Can't store undefined: ", orgPos);
         continue;
       }
 
@@ -202,15 +202,28 @@ export class Bank {
         let cont = false;
         let meta = G.items[item.name];
         let spots = this.items[item.name].findItem();
+        let left = item.q;
         for (let i in spots) {
           let spot = spots[i];
-          if (<number>meta.s - <number>spot[2].q >= item.q) {
+          if (<number>meta.s > item.q) {
             // By pulling this item into the character inventory, then using swap, we can stack the items.
-            let [num, q] = await this._getItemFromPosition(spot);
-            if (num !== null) {
-              await swap(pos, num);
-              item = character.items[pos];
-              break;
+            let [newPos, q] = await this._getItemFromPosition(spot);
+            if (newPos !== null) {
+              let newItem = character.items[newPos];
+              let room = <number>meta.s - <number>newItem.q;
+              if (room >= left) {
+                await swap(orgPos, newPos);
+                item = character.items[orgPos];
+                break;
+              } else {
+                let freeSlot = getFreeSlot(character.items, character.isize);
+                if (freeSlot) {
+                  await split(orgPos, room);
+                  await swap(newPos, freeSlot);
+                }
+                length = ipos.push(newPos);
+                left -= room;
+              }
             }
           }
         }
@@ -223,7 +236,7 @@ export class Bank {
         if (free !== null) {
           await this.moveToPack(pack);
           this._addItemPosition(pack, free, item);
-          await bank_store(pos, pack.name, free);
+          await bank_store(orgPos, pack.name, free);
           stored++;
           break;
         }
