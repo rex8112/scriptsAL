@@ -83,7 +83,7 @@ export function getMonsterDrops(item: ItemKey): MonsterDropRate[] {
 }
 
 var GabrialVendorUpgradeInstructions: UpgradeInstructions = {
-  keep: 2,
+  keep: 1,
   max: 9,
   primling: 90,
   primordial: 90
@@ -194,6 +194,14 @@ export var Items: {[name: string]: Item} = {
   },
 
   // Weapons
+  staff: {
+    name: "staff",
+    meta: G.items["staff"],
+    price: G.items["staff"].g,
+    upgrade: GabrialVendorUpgradeInstructions,
+    vendor: GabrialVendorInstructions
+  },
+
   stinger: {
     name: "stinger",
     meta: G.items["stinger"],
