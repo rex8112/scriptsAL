@@ -1,7 +1,7 @@
-import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, Entity, IPosition, ItemInfo, ItemKey, MonsterKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
+import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, Entity, IPosition, ItemInfo, ItemKey, LootEvent, MonsterKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
-import { LocalChacterInfo } from "./Types";
+import { FarmerGoal, LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
 import { getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
 import { Bank, BankPosition } from "./Bank";
@@ -12,6 +12,7 @@ import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Vector } from "./Utils/Vector";
 import { Items } from "./Items";
 import { Location } from "./Utils/Location";
+import { isIPosition } from "./TypeChecks";
 
 export class BaseCharacter {
   original: Character;
@@ -82,6 +83,8 @@ export class BaseCharacter {
    * @returns The promise returned by Mover.move().
    */
   move(dest: IPosition | string) {
+    if (isIPosition(dest) && can_move_to(dest.x, dest.y))
+      return move(dest.x, dest.y);
     return Mover.move(dest);
   }
 
@@ -97,7 +100,29 @@ export class FarmerCharacter extends BaseCharacter {
   attack_mode: "single" | "multiple" = "single";
   default_type: MonsterKey = "minimush";
   current_type: MonsterKey = this.default_type;
-  goals: {mon_type: MonsterKey, for: {item: ItemKey, amount: number}[]} | undefined;
+  goals: {[name: string]: FarmerGoal} = {};
+
+  constructor(ch: Character) {
+    super(ch);
+    ch.on("loot", (data) => { this.on_loot(data); });
+  }
+
+  on_loot(loot: LootEvent) {
+    let goal = this.goals[this.current_type];
+    if (!goal) return;
+
+    for (let f of goal.for) {
+      if (f.name === "gold") {
+        f.amount -= loot.gold;
+      } else if (Object.keys(loot.items).includes(f.name)) {
+        let items = loot.items.filter(i=>{i.name === f.name});
+        if (!items) continue;
+        // I don't know, maybe you can loot multiple of an item.
+        for (let item of items)
+          f.amount -= item.q ?? 1;
+      }
+    }
+  }
 
   setLeader(leader: string) {
     super.setLeader(leader);

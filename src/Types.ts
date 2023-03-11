@@ -1,4 +1,4 @@
-import { ItemInfo, SlotType, TradeSlotType } from "typed-adventureland";
+import { ItemInfo, ItemKey, MonsterKey, SlotType, TradeSlotType } from "typed-adventureland";
 import { CharacterEntitySlotsInfos } from "typed-adventureland/dist/src/entities/character-entity";
 
 export interface CharacterData {
@@ -18,6 +18,12 @@ export interface LocalChacterInfo {
   time: Date;
   party: string | null;
   leader?: string;
+}
+
+export interface FarmerGoal {
+  name: MonsterKey;
+  for: {name: ItemKey | "gold", amount: number}[];
+  focus?: true;
 }
 
 export type CMTask = CMRequestInfo | CMRequestInfoReply | CMRequestItems 
