@@ -104,10 +104,10 @@ export class FarmerCharacter extends BaseCharacter {
 
   constructor(ch: Character) {
     super(ch);
-    ch.on("loot", (data) => { this.on_loot(data); });
+    ch.on("loot", (data) => { this.onLoot(data); });
   }
 
-  on_loot(loot: LootEvent) {
+  onLoot(loot: LootEvent) {
     let goal = this.goals[this.current_type];
     if (!goal) return;
 
