@@ -272,7 +272,7 @@ export var Items: {[name: string]: Item} = {
     price: G.items["ringsj"].g,
     compound: {
       keep: 3,
-      max: 3,
+      max: 4,
       primling: 20,
       primordial: 20
     }
@@ -284,7 +284,7 @@ export var Items: {[name: string]: Item} = {
     price: G.items["hpamulet"].g,
     compound: {
       keep: 3,
-      max: 3,
+      max: 4,
       primling: 20,
       primordial: 20
     }
@@ -296,7 +296,7 @@ export var Items: {[name: string]: Item} = {
     price: G.items["hpbelt"].g,
     compound: {
       keep: 3,
-      max: 3,
+      max: 4,
       primling: 20,
       primordial: 20
     }
@@ -308,7 +308,7 @@ export var Items: {[name: string]: Item} = {
     price: G.items["intamulet"].g,
     compound: {
       keep: 2,
-      max: 3,
+      max: 4,
       primling: 20,
       primordial: 20
     }
@@ -320,7 +320,7 @@ export var Items: {[name: string]: Item} = {
     price: G.items["stramulet"].g,
     compound: {
       keep: 1,
-      max: 3,
+      max: 4,
       primling: 20,
       primordial: 20
     }
@@ -332,7 +332,7 @@ export var Items: {[name: string]: Item} = {
     price: G.items["dexamulet"].g,
     compound: {
       keep: 1,
-      max: 3,
+      max: 4,
       primling: 20,
       primordial: 20
     }
