@@ -302,37 +302,7 @@ export class MerchantCharacter extends BaseCharacter {
   }
 
   async farmerRun() {
-    var characterCopy = this.characterInfo;
-    for (var name in characterCopy) {
-      var char = characterCopy[name];
-      if (name == character.name || !Object.keys(this.characterInfo).includes(name)) continue;
-      set_message("Restocking");
-      let position = get_position(char);
-      while (simple_distance(character, position) > 100) {
-        position = get_position(char);
-        await this.move(position);
-        game_log("Move Finished");
-        await sleep(150);
-      }
-      let promises = [];
-      let items = this.getTakableItems(char).slice(0, 10);
-
-      promises.push(this.CM.requestGold(name, char.gold));
-      promises.push(this.CM.requestItems(name, items));
-
-      let hpots = getItemPosition("hpot0", character.items, character.isize);
-      let hneeded = 300 - getItemQuantity("hpot0", char.items, char.isize)
-      let mpots = getItemPosition("mpot0", character.items, character.isize);
-      let mneeded = 300 - getItemQuantity("mpot0", char.items, char.isize);
-
-      if (hpots != null && hneeded > 0) await send_item(name, hpots, hneeded);
-      if (mpots != null && mneeded > 0) await send_item(name, mpots, mneeded);
-
-      set_message("Waiting");
-      await Promise.all(promises);
-    }
-    await this.updateCharacterInfo();
-    await this.cleanInventory();
+    this.taskController.enqueueTask(new ReplenishFarmersTask(this), 600);
   }
 
   async buy(item: ItemKey, amount: number): Promise<number> {
