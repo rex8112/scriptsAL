@@ -7,13 +7,11 @@ import { savePosition } from "./Utils/Functions";
 import { FarmerCharacter, MerchantCharacter } from "./Character";
 
 let globalAny = <any>globalThis;
-if (globalAny.char === undefined)
-  globalAny.char = {};
 var char: MerchantCharacter | FarmerCharacter | null = null;
 
 if (character.ctype == "merchant") {
   if (char === null) char = new MerchantCharacter(character);
-  globalAny.char[character.name] = char;
+  globalAny.c = char;
   char.startRun();
 } else {
   if (char === null) char = new FarmerCharacter(character);
