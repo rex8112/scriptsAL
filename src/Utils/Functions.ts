@@ -115,7 +115,7 @@ export function get_position(char: LocalChacterInfo): IPosition {
 export async function moveToCharacter(char: BaseCharacter, id: string): Promise<boolean> {
   let position = getPosition(id);
   if (!position) return false;
-  while (Vector.fromEntity(character).distanceFromSqr(position.vector) > 50 * 50) {
+  while (character.map !== position.map || Vector.fromEntity(character).distanceFromSqr(position.vector) > 50 * 50) {
     await char.move(position.asPosition());
     await sleep(100);
     position = getPosition(id);
