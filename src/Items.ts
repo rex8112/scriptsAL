@@ -379,5 +379,17 @@ export var Items: {[name: string]: Item} = {
     meta: G.items["cscroll1"],
     price: G.items["cscroll1"].g,
     vendor: LucasVendorInstructions
-  }
+  },
+
+  spores: {
+    name: "spores",
+    meta: G.items["spores"],
+    price: G.items["spores"].g,
+    vendor: {
+      sell: true,
+      buy: false,
+      keep: 3_000,
+      location: "market"
+    }
+  },
 }

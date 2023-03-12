@@ -1,5 +1,7 @@
 import { MerchantCharacter } from "../Character";
+import { Items } from "../Items";
 import { Task } from "../Tasks";
+import { LocalChacterInfo } from "../Types";
 import { getItemPosition, getItemQuantity, getPosition, get_position, moveToCharacter } from "../Utils/Functions";
 
 export class ReplenishFarmersTask extends Task {
@@ -49,6 +51,52 @@ export class ReplenishFarmersTask extends Task {
     await this.char.bulk_buy([["hpot0", hpots - grabbedH], ["mpot0", mpots - grabbedM]])
   }
 
+  getTakableItems(char: LocalChacterInfo): [number, number][] {
+    var items: [number, number][] = [];
+    let save = ["hpot0", "mpot0"];
+    for (let i = 0; i < char.isize; i++) {
+      if (char.items[i] && !save.includes(char.items[i].name))
+        items.push([i, char.items[i].q || 1]);
+    }
+    return items;
+  }
+
+  async cleanInventory() {
+    let keep = ["hpot0", "mpot0", "stand0"]
+    let pos: number[] = [];
+    let sellPos: number[] = [];
+    for (let i in character.items) {
+      let item = character.items[i];
+      if (item && !keep.includes(item.name)) {
+        let data = Items[item.name];
+        if (data && data.vendor?.sell === true) {
+          if (this.char.bank.items[item.name]?.getTotal() ?? 0 >= data.vendor.keep) {
+            sellPos.push(Number(i));
+            continue;
+          }
+        }
+        pos.push(Number(i));
+      }
+    }
+
+    if (sellPos.length > 0) {
+      await this.char.move("market");
+      for (let pos of sellPos) {
+        try {
+          await sell(pos, character.items[pos].q ?? 1);
+        } catch {
+          console.error("Item not present.");
+        }
+      }
+    }
+
+    await this.char.bank.storeItems(pos);
+
+    if (character.gold > 2_000_000) {
+      await this.char.bank.depositGold(character.gold - 2_000_000);
+    }
+  }
+
   async run_task(): Promise<void> {
     var characterInfo = await this.char.CM.gatherAllCharacterInfo();
 
@@ -68,7 +116,7 @@ export class ReplenishFarmersTask extends Task {
       if (name == character.name || !Object.keys(this.char.characterInfo).includes(name)) continue;
       if (!await moveToCharacter(this.char, char.name)) continue;
       let promises = [];
-      let items = this.char.getTakableItems(char).slice(0, 10);
+      let items = this.getTakableItems(char).slice(0, 10);
 
       promises.push(this.char.CM.requestGold(name, char.gold));
       promises.push(this.char.CM.requestItems(name, items));
@@ -84,6 +132,6 @@ export class ReplenishFarmersTask extends Task {
       await Promise.all(promises);
     }
     await this.char.updateCharacterInfo();
-    await this.char.cleanInventory();
+    await this.cleanInventory();
   }
 }
