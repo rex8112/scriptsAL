@@ -11,13 +11,13 @@ var char: MerchantCharacter | FarmerCharacter | null = null;
 
 if (character.ctype == "merchant") {
   if (char === null) char = new MerchantCharacter(character);
-  globalAny.c = char;
   char.startRun();
 } else {
   if (char === null) char = new FarmerCharacter(character);
   char.mode = "leader";
   char.startRun();
 }
+globalAny.c = char;
 
 setInterval(async () => {
   set(`${character.name}_pos`, {map: character.map, x: character.x, y: character.y});
