@@ -275,6 +275,12 @@ export var Items: {[name: string]: Item} = {
       max: 4,
       primling: 20,
       primordial: 20
+    },
+    vendor: {
+      location: "market",
+      buy: false,
+      sell: true,
+      keep: 0
     }
   },
 
@@ -287,6 +293,12 @@ export var Items: {[name: string]: Item} = {
       max: 4,
       primling: 20,
       primordial: 20
+    },
+    vendor: {
+      location: "market",
+      buy: false,
+      sell: true,
+      keep: 0
     }
   },
 
@@ -299,6 +311,12 @@ export var Items: {[name: string]: Item} = {
       max: 4,
       primling: 20,
       primordial: 20
+    },
+    vendor: {
+      location: "market",
+      buy: false,
+      sell: true,
+      keep: 0
     }
   },
 
@@ -381,6 +399,7 @@ export var Items: {[name: string]: Item} = {
     vendor: LucasVendorInstructions
   },
 
+  // Materials
   spores: {
     name: "spores",
     meta: G.items["spores"],
@@ -389,6 +408,18 @@ export var Items: {[name: string]: Item} = {
       sell: true,
       buy: false,
       keep: 3_000,
+      location: "market"
+    }
+  },
+
+  cscale: {
+    name: "cscale",
+    meta: G.items["cscale"],
+    price: G.items["cscale"].g,
+    vendor: {
+      sell: true,
+      buy: false,
+      keep: 10,
       location: "market"
     }
   },
