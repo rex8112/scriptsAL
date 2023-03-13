@@ -100,11 +100,14 @@ export class ReplenishFarmersTask extends Task {
   async run_task(): Promise<void> {
     var characterInfo = await this.char.CM.gatherAllCharacterInfo();
 
+    let potsNeeded: {[name: string]: [number, number]} = {};
+
     let totalHPots = 0;
     let totalMPots = 0;
     Object.values(characterInfo).forEach((char) => {
       let hneeded = Math.max(500 - getItemQuantity("hpot0", char.items, char.isize), 0);
       let mneeded = Math.max(500 - getItemQuantity("mpot0", char.items, char.isize), 0);
+      potsNeeded[char.name] = [hneeded, mneeded];
       totalHPots += hneeded;
       totalMPots += mneeded;
     });
@@ -114,7 +117,7 @@ export class ReplenishFarmersTask extends Task {
     for (var name in characterInfo) {
       var char = characterInfo[name];
       if (name == character.name || !Object.keys(this.char.characterInfo).includes(name)) continue;
-      if (!await moveToCharacter(this.char, char.name)) continue;
+      if (!await moveToCharacter(this.char, char.name, 200)) continue;
       let promises = [];
       let items = this.getTakableItems(char).slice(0, 10);
 
@@ -123,8 +126,7 @@ export class ReplenishFarmersTask extends Task {
 
       let hpots = getItemPosition("hpot0", character.items, character.isize);
       let mpots = getItemPosition("mpot0", character.items, character.isize);
-      let hneeded = Math.max(500 - getItemQuantity("hpot0", char.items, char.isize), 0);
-      let mneeded = Math.max(500 - getItemQuantity("mpot0", char.items, char.isize), 0);
+      let [hneeded, mneeded] = potsNeeded[char.name];
 
       if (hpots != null && hneeded > 0) await send_item(name, hpots, hneeded);
       if (mpots != null && mneeded > 0) await send_item(name, mpots, mneeded);
