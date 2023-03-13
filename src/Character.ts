@@ -98,7 +98,7 @@ export class BaseCharacter {
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
   attack_mode: "single" | "multiple" = "single";
-  default_type: MonsterKey = "minimush";
+  default_type: MonsterKey = "crabx";
   current_type: MonsterKey = this.default_type;
   goals: {[name: string]: FarmerGoal} = {};
 
@@ -174,7 +174,7 @@ export class FarmerCharacter extends BaseCharacter {
       let new_target = null;
       if (entity.mtype !== this.current_type) continue;
       if (!entity.target) new_target = entity;
-      else if (parent.entities[entity.target].ctype === "merchant") {
+      else if (parent.entities[entity.target]?.ctype === "merchant") {
         // Override any future checks. SAVE THE MERCHANT!
         target = entity;
         break;
@@ -209,10 +209,11 @@ export class FarmerCharacter extends BaseCharacter {
 
     for (let id in parent.entities) {
       let entity = parent.entities[id];
-      if (entity.type !== "monster") continue;
       let entityPos = Vector.fromEntity(entity);
       let distanceToBe;
-      if (character.range > entity.range) {
+      if (entity.type !== "monster") {
+        distanceToBe = 10;
+      } else if (character.range > entity.range) {
         distanceToBe = (character.range + entity.range) / 2;
       } else {
         distanceToBe = character.range - 10;
