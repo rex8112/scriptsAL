@@ -367,46 +367,6 @@ export class MerchantCharacter extends BaseCharacter {
     return nums;
   }
 
-  async compoundItems() {
-    var positions = this.getCompoundableItemsFromBank();
-    let items: [number, number, number][] = [];
-    let lastInv = 0;
-    for (let i in positions) {
-      let pos = positions[i];
-      await this.bank.getItemFromPositions(pos);
-      let compItems = [];
-      while (true) {
-        if (lastInv > 41 || compItems.length >= 3) break;
-
-        let item = character.items[lastInv];
-        if (item && item.name === pos[0][2].name && item.level === pos[0][2].level) {
-          compItems.push(lastInv);
-        }
-        lastInv++;
-      }
-      items.push(<[number, number, number]>compItems);
-    }
-    var totalAttempts = items.length;
-    var scrolls = getItemQuantity("cscroll0", character.items, character.isize);
-    if (scrolls < totalAttempts) {
-      set_message("Restocking");
-      await this.move("market");
-      buy("cscroll0", totalAttempts - scrolls);
-    }
-    await this.move("market");
-    set_message("Compounding");
-    let returnItems = [];
-    for (var i in items) {
-      let pos = items[i];
-      let result = await compound(pos[0], pos[1], pos[2], <number>getItemPosition("cscroll0", character.items, character.isize));
-      if (result.success) {
-        returnItems.push(Math.min(...pos));
-      }
-    }
-    if (returnItems.length > 0)
-      await this.bank.storeItems(returnItems);
-  }
-
   needFarmerRun(): boolean {
     var go = false;
     for (var name in this.characterInfo) {
@@ -417,66 +377,6 @@ export class MerchantCharacter extends BaseCharacter {
       if (getItemQuantity("mpot0", char.items, char.isize) < 100) go = true;
     }
     return go;
-  }
-
-  isUpgradable(item: ItemInfo): boolean {
-    let meta = G.items[item.name];
-    if (meta.grades && meta.grades[0] > 0) {
-      if (meta.upgrade && meta.grades[0] > <number>item.level) return true;
-    }
-    return false;
-  }
-
-  getUpgradableItemsInBank() {
-    return this.bank.findItems(this.isUpgradable);
-  }
-
-  /**
-   * 
-   * @returns Returns an array of number pairs: [islot, times_to_upgrade]
-   */
-  getUpgradableItems(): [number, number][] {
-    var items: [number, number][] = [];
-    for (let i = 0; i < character.isize; i++) {
-      if (character.items[i]) {
-        let item = character.items[i];
-        let meta = G.items[item.name];
-        if (this.isUpgradable(item) && meta.grades) 
-          items.push([i, meta.grades[0] - <number>item.level]);
-      }
-    }
-    return items;
-  }
-
-  getCompoundableItemsFromBank(): [BankPosition, BankPosition, BankPosition][] {
-    let positions = this.bank.findItems((item) => {
-      let meta = G.items[item.name];
-      if (meta.grades && (meta.grades[0] < 1 || meta.grades[0] < <number>item.level)) return false;
-      if (meta.compound) return true;
-      return false;
-    })
-    var items: {[name: string]: BankPosition[]} = {};
-    for (let i in positions) {
-      let pos = positions[i];
-      let item = pos[2];
-      let name = `${item.name}${item.level}`;
-      if (items[name] === undefined)
-        items[name] = [pos];
-      else
-        items[name].push(pos);
-    }
-
-    let pos: [BankPosition, BankPosition, BankPosition][] = [];
-    for (var name in items) {
-      let positions = items[name];
-      if (positions.length < 3) continue;
-      let compounds = Math.floor(positions.length / 3);
-      for (let i = 0; i < compounds; i++) {
-        let start = i * 3;
-        pos.push([positions[start], positions[start+1], positions[start+2]])
-      }
-    }
-    return pos;
   }
 
   getTakableItems(char: LocalChacterInfo): [number, number][] {
