@@ -94,15 +94,8 @@ export class Mover {
       return true;
     }
 
-    var realPos: IPosition;
-    if (isPositionReal(destination)) {
-      realPos = {x: Math.round(destination.real_x), y: Math.round(destination.real_y), map: destination.map};
-    } else if (isIPosition(destination)) {
-      realPos = destination;
-    } else {
-      Mover._log("Failed to get path: No destination specified");
-      return false;
-    }
+    var realPos = Mover.get_coord(destination);
+    if (!realPos) return false;
     realPos.map = realPos.map || character.map;
 
     if(character.map == realPos.map && can_move_to(realPos.x, realPos.y))
@@ -209,7 +202,9 @@ export class Mover {
 
   static get_coord(destination: MoverDestination): IPosition | null {
     let endPos;
-    if (isIPosition(destination)) {
+    if (isPositionReal(destination)) {
+      endPos = {x: Math.round(destination.real_x), y: Math.round(destination.real_y), map: destination.map};
+    } else if (isIPosition(destination)) {
       endPos = {x: Math.round(destination.x), y: Math.round(destination.y), map: destination.map || character.map};
     } else {
       endPos = Mover.find_coords(destination);
@@ -272,12 +267,15 @@ export class Mover {
 
     if (!endPos) return {error: "Unrecognized location"};
 
+    if (!get('maptoken')) return {error: "Please set maptoken"};
+
     try {
       let res = await fetch("https://almapper.zinals.tech:42805/FindPath/", {
         method: "POST",
         mode: "cors",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${get('maptoken')}`
         },
         body: JSON.stringify({
           fromMap: startPos.map,
