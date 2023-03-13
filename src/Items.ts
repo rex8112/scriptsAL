@@ -110,6 +110,13 @@ var WanderersUpgradeInstructions: UpgradeInstructions = {
   primordial: 20
 }
 
+var RuggedUpgradeInstructions: UpgradeInstructions = {
+  keep: 1,
+  max: 7,
+  primling: 20,
+  primordial: 20
+}
+
 export var Items: {[name: string]: Item} = {
   // Equipment
   helmet: {
@@ -191,6 +198,47 @@ export var Items: {[name: string]: Item} = {
     price: G.items["wshoes"].g,
     crafting: G.craft["wshoes"],
     upgrade: WanderersUpgradeInstructions
+  },
+
+  // Rugged Set
+  helmet1: {
+    name: "helmet1",
+    meta: G.items["helmet1"],
+    price: G.items["helmet1"].g,
+    crafting: G.craft["helmet1"],
+    upgrade: RuggedUpgradeInstructions
+  },
+
+  coat1: {
+    name: "coat1",
+    meta: G.items["coat1"],
+    price: G.items["coat1"].g,
+    crafting: G.craft["coat1"],
+    upgrade: RuggedUpgradeInstructions
+  },
+
+  pants1: {
+    name: "pants1",
+    meta: G.items["pants1"],
+    price: G.items["pants1"].g,
+    crafting: G.craft["pants1"],
+    upgrade: RuggedUpgradeInstructions
+  },
+
+  gloves1: {
+    name: "gloves1",
+    meta: G.items["gloves1"],
+    price: G.items["gloves1"].g,
+    crafting: G.craft["gloves1"],
+    upgrade: RuggedUpgradeInstructions
+  },
+
+  shoes1: {
+    name: "shoes1",
+    meta: G.items["shoes1"],
+    price: G.items["shoes1"].g,
+    crafting: G.craft["shoes1"],
+    upgrade: RuggedUpgradeInstructions
   },
 
   // Weapons
