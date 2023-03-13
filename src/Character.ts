@@ -317,7 +317,7 @@ export class MerchantCharacter extends BaseCharacter {
       else
         return -1;
     }
-    await this.move(i.vendor.location);
+    await this.move(i.vendor.buyLocation);
     let data = await buy_with_gold(item, amount);
     return data.num;
   }
@@ -359,7 +359,7 @@ export class MerchantCharacter extends BaseCharacter {
         continue;
       }
       let i = Items[item];
-      if (i.vendor) await this.move(i.vendor.location);
+      if (i.vendor) await this.move(i.vendor.buyLocation);
       let data = await buy_with_gold(item, amount);
       if (nums.indexOf(data.num) === -1)
         nums.push(data.num);

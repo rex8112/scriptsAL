@@ -24,8 +24,8 @@ export interface CompoundInstructions {
 }
 
 export interface VendorInstructions {
-  /** Where this item can be bought/sold. */
-  location: MoverDestination;
+  /** Where this item can be bought. */
+  buyLocation: MoverDestination;
   /** Whether or not to allow buying this item. */
   buy: boolean;
   /** Whether or not to allow vendor selling this item. */
@@ -90,14 +90,14 @@ var GabrialVendorUpgradeInstructions: UpgradeInstructions = {
 }
 
 var GabrialVendorInstructions: VendorInstructions = {
-  location: "market",
+  buyLocation: "market",
   buy: true,
   sell: false,
   keep: 5
 }
 
 var LucasVendorInstructions: VendorInstructions = {
-  location: "market",
+  buyLocation: "market",
   buy: true,
   sell: false,
   keep: 1000
@@ -261,7 +261,7 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     vendor: {
-      location: "market",
+      buyLocation: "market",
       buy: false,
       sell: true,
       keep: 3
@@ -279,7 +279,7 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     vendor: {
-      location: "market",
+      buyLocation: "market",
       buy: false,
       sell: true,
       keep: 2
@@ -291,7 +291,7 @@ export var Items: {[name: string]: Item} = {
     meta: G.items["cclaw"],
     price: G.items["cclaw"].g,
     vendor: {
-      location: "market",
+      buyLocation: "market",
       buy: false,
       sell: true,
       keep: -1
@@ -337,7 +337,7 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     vendor: {
-      location: "market",
+      buyLocation: "market",
       buy: false,
       sell: true,
       keep: 0
@@ -355,7 +355,7 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     vendor: {
-      location: "market",
+      buyLocation: "market",
       buy: false,
       sell: true,
       keep: 0
@@ -373,7 +373,7 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     vendor: {
-      location: "market",
+      buyLocation: "market",
       buy: false,
       sell: true,
       keep: 0
@@ -468,7 +468,7 @@ export var Items: {[name: string]: Item} = {
       sell: true,
       buy: false,
       keep: 3_000,
-      location: "market"
+      buyLocation: "market"
     }
   },
 
@@ -480,7 +480,7 @@ export var Items: {[name: string]: Item} = {
       sell: true,
       buy: false,
       keep: 10,
-      location: "market"
+      buyLocation: "market"
     }
   },
 }
