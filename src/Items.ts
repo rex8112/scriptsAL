@@ -237,6 +237,18 @@ export var Items: {[name: string]: Item} = {
       keep: 2
     }
   },
+  
+  cclaw: {
+    name: "cclaw",
+    meta: G.items["cclaw"],
+    price: G.items["cclaw"].g,
+    vendor: {
+      location: "market",
+      buy: false,
+      sell: true,
+      keep: -1
+    }
+  },
 
   // Fire Weapons
   firestaff: {
