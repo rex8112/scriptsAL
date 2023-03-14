@@ -20,7 +20,6 @@ export class BaseCharacter {
   CM: CharacterMessager;
   working: boolean = false;
   bank: Bank;
-  taskController: TaskController;
   leader: string | null = null;
 
   potionUseTask: NodeJS.Timer | null = null;
@@ -33,8 +32,7 @@ export class BaseCharacter {
     this.name = ch.name;
     this.CM = new CharacterMessager(this);
     this.bank = new Bank(this);
-    this.taskController = new TaskController(this);
-    this.taskController.run();
+    
   }
 
   get Position(): Location {
@@ -103,9 +101,12 @@ export class MerchantCharacter extends BaseCharacter {
   updateTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
+  taskController: TaskController;
 
   constructor(ch: Character) {
     super(ch);
+    this.taskController = new TaskController(this);
+    this.taskController.run();
     this.updateCharacterInfo();
   }
 
