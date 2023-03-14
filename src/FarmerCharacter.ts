@@ -2,6 +2,7 @@ import { Entity, LootEvent, MonsterKey } from "typed-adventureland";
 import { FarmerGoal } from "./Types";
 import { Vector } from "./Utils/Vector";
 import { BaseCharacter, get_position } from "./Character";
+import { canUseSkill } from "./Utils/Functions";
 
 
 export class FarmerCharacter extends BaseCharacter {
@@ -11,9 +12,17 @@ export class FarmerCharacter extends BaseCharacter {
   current_type: MonsterKey = this.default_type;
   goals: { [name: string]: FarmerGoal; } = {};
 
+  supportInterval?: NodeJS.Timer;
+
   constructor(ch: Character) {
     super(ch);
     ch.on("loot", (data) => { this.onLoot(data); });
+  }
+
+  startTasks(): void {
+    super.startTasks();
+
+    if (!this.supportInterval) this.supportInterval = setInterval(() => { this.supportSkills(); }, 250);
   }
 
   onLoot(loot: LootEvent) {
@@ -45,6 +54,8 @@ export class FarmerCharacter extends BaseCharacter {
       game_log(`Becoming Follower to ${this.leader}`, "orange");
     }
   }
+
+  async supportSkills() {}
 
   async run() {
     if (this.mode == "follower") {
@@ -155,5 +166,63 @@ export class FarmerCharacter extends BaseCharacter {
     }
 
     move(pos.x, pos.y);
+  }
+}
+
+function getMonstersThatTarget(entity: Entity) {
+  let monsters = [];
+  for (let ename in parent.entities) {
+    let monster = parent.entities[ename];
+    if (monster.type !== "monster") continue;
+    if (monster.target === entity.name) {
+      monsters.push(monster);
+    }
+  }
+
+  return monsters;
+}
+
+export class PriestCharacter extends FarmerCharacter {
+  async supportSkills(): Promise<void> {
+    let members = Object.keys(get_party()).map((m) => get_player(m)).filter((m) => m)
+                  .sort((a, b) => { return (b.max_hp - b.hp) - (a.max_hp - a.hp)});
+
+    let totalLow = 0;
+    for (let member of members) {
+      if (member.hp <= member.max_hp - (character.heal / 2)) {
+        if (canUseSkill("heal") && is_in_range(member, "heal")) {
+          await use_skill("heal", member);
+        }
+      }
+      if (member.name !== character.name && getMonstersThatTarget(member).length > 0) {
+        if (canUseSkill("absorb") && is_in_range(member, "absorb")) {
+          await use_skill("absorb", member);
+        }
+      }
+
+      // If they are still low, mark them as a party heal candidate.
+      if (member.hp <= member.max_hp - 500) totalLow++;
+    }
+
+    if (totalLow >= 1 && canUseSkill("partyheal")) await use_skill("partyheal");
+  }
+
+  async attack(target: Entity) {
+    change_target(target);
+    let k = setInterval(() => { this.kite(target); }, 250);
+    while (target.dead === undefined) {
+      try{
+        if (!target.s["cursed"] && canUseSkill("curse") && is_in_range(target, "curse")) await use_skill("curse");
+      }
+      catch (error) {
+        console.error("Error in skill", error);
+      }
+      if (can_attack(target)) {
+        set_message("Attacking");
+        attack(target);
+      }
+      await sleep(250);
+    }
+    clearInterval(k);
   }
 }

@@ -1,4 +1,4 @@
-import { IPosition, ItemInfo, PositionReal } from "typed-adventureland"
+import { IPosition, ItemInfo, PositionReal, SkillKey } from "typed-adventureland"
 import { BaseCharacter } from "../Character"
 import { LocalChacterInfo } from "../Types"
 import { Location } from "./Location"
@@ -148,6 +148,15 @@ export function getPosition(id: string): Location | null {
 export function savePosition() {
   let loc = Location.fromEntity(character);
   return set(`${character.id}_position`, loc.asPosition());
+}
+
+export function canUseSkill(skill: SkillKey): boolean {
+  let data = G.skills[skill];
+  let cooldownDone = !is_on_cooldown(skill);
+  let correctLevel = data.level === undefined || data.level <= character.level;
+  let hasMana = data.mp === undefined || data.mp <= character.mp;
+  let result = cooldownDone && correctLevel && hasMana;
+  return result;
 }
 
 function min(arg0: number, arg1: number): number {

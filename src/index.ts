@@ -5,19 +5,21 @@
 
 import { savePosition } from "./Utils/Functions";
 import { MerchantCharacter } from "./Character";
-import { FarmerCharacter } from "./FarmerCharacter";
+import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter";
 
 let globalAny = <any>globalThis;
-var char: MerchantCharacter | FarmerCharacter | null = null;
+var char: MerchantCharacter | PriestCharacter | FarmerCharacter | null = null;
 
 if (character.ctype == "merchant") {
-  if (char === null) char = new MerchantCharacter(character);
-  char.startRun();
-} else {
-  if (char === null) char = new FarmerCharacter(character);
+  char = new MerchantCharacter(character);
+} else if (character.ctype == "priest") {
+  char = new PriestCharacter(character);
   char.mode = "leader";
-  char.startRun();
+} else {
+  char = new FarmerCharacter(character);
+  char.mode = "leader";
 }
+char.startRun();
 globalAny.c = char;
 
 setInterval(async () => {
