@@ -70,7 +70,7 @@ export class ReplenishFarmersTask extends Task {
     let totalMPots = 0;
     Object.values(characterInfo).forEach((char) => {
       let hneeded = Math.max(500 - getItemQuantity("hpot0", char.items, char.isize), 0);
-      let mneeded = Math.max(500 - getItemQuantity("mpot0", char.items, char.isize), 0);
+      let mneeded = Math.max(800 - getItemQuantity("mpot0", char.items, char.isize), 0);
       potsNeeded[char.name] = [hneeded, mneeded];
       totalHPots += hneeded;
       totalMPots += mneeded;
