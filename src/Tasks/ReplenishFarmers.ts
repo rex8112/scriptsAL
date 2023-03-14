@@ -2,7 +2,7 @@ import { MerchantCharacter } from "../Character";
 import { Items } from "../Items";
 import { Task } from "../Tasks";
 import { LocalChacterInfo } from "../Types";
-import { getItemPosition, getItemQuantity, getPosition, get_position, moveToCharacter } from "../Utils/Functions";
+import { getFreeSlots, getItemPosition, getItemQuantity, getPosition, get_position, moveToCharacter } from "../Utils/Functions";
 
 export class ReplenishFarmersTask extends Task {
   name = "replenish_farmers";
@@ -83,7 +83,8 @@ export class ReplenishFarmersTask extends Task {
       if (name == character.name || !Object.keys(this.char.characterInfo).includes(name)) continue;
       if (!await moveToCharacter(this.char, char.name, 200)) continue;
       let promises = [];
-      let items = this.getTakableItems(char).slice(0, 10);
+      let free = getFreeSlots(character.items, character.isize).length;
+      let items = this.getTakableItems(char).slice(0, free-2);
 
       promises.push(this.char.CM.requestGold(name, char.gold));
       promises.push(this.char.CM.requestItems(name, items));
