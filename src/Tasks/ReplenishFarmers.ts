@@ -61,42 +61,6 @@ export class ReplenishFarmersTask extends Task {
     return items;
   }
 
-  async cleanInventory() {
-    let keep = ["hpot0", "mpot0", "stand0"]
-    let pos: number[] = [];
-    let sellPos: number[] = [];
-    for (let i in character.items) {
-      let item = character.items[i];
-      if (item && !keep.includes(item.name)) {
-        let data = Items[item.name];
-        if (data && data.vendor?.sell === true) {
-          if (this.char.bank.items[item.name]?.getTotal() ?? 0 >= data.vendor.keep) {
-            sellPos.push(Number(i));
-            continue;
-          }
-        }
-        pos.push(Number(i));
-      }
-    }
-
-    if (sellPos.length > 0) {
-      await this.char.move("market");
-      for (let pos of sellPos) {
-        try {
-          await sell(pos, character.items[pos].q ?? 1);
-        } catch {
-          console.error("Item not present.");
-        }
-      }
-    }
-
-    await this.char.bank.storeItems(pos);
-
-    if (character.gold > 2_000_000) {
-      await this.char.bank.depositGold(character.gold - 2_000_000);
-    }
-  }
-
   async run_task(): Promise<void> {
     var characterInfo = await this.char.CM.gatherAllCharacterInfo();
 
@@ -134,6 +98,6 @@ export class ReplenishFarmersTask extends Task {
       await Promise.all(promises);
     }
     await this.char.updateCharacterInfo();
-    await this.cleanInventory();
+    await this.char.cleanInventory();
   }
 }

@@ -288,10 +288,30 @@ export class MerchantCharacter extends BaseCharacter {
   async cleanInventory() {
     let keep = ["hpot0", "mpot0", "stand0"]
     let pos: number[] = [];
+    let sellPos: number[] = [];
     for (let i in character.items) {
       let item = character.items[i];
       if (item && !keep.includes(item.name)) {
+        let data = Items[item.name];
+        if (data && data.vendor?.sell === true) {
+          if (this.bank.items[item.name]?.getTotal() ?? 0 >= data.vendor.keep) {
+            sellPos.push(Number(i));
+            continue;
+          }
+        }
         pos.push(Number(i));
+      }
+    }
+
+    console.log(sellPos);
+    if (sellPos.length > 0) {
+      await this.move("market");
+      for (let pos of sellPos) {
+        try {
+          await sell(pos, character.items[pos].q ?? 1);
+        } catch {
+          console.error("Item not present.");
+        }
       }
     }
 
