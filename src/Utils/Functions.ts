@@ -17,7 +17,7 @@ export function smartUseHpOrMp() {
   var used=true
   if(is_on_cooldown("use_hp")) 
     return resolving_promise({success:false,reason:"cooldown"})
-  if (character.hp < character.max_hp-heal) 
+  if (character.hp < character.max_hp / 2) 
     return use_skill("use_hp")
   else if (character.mp < character.max_mp-mana)
     return use_skill("use_mp")
