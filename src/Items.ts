@@ -34,6 +34,15 @@ export interface VendorInstructions {
   keep: number;
 }
 
+export interface TradeInstructions {
+  /** The maximum allowed money to buy this for */
+  buyMax: number;
+  /** The price to sell this for. 0 disables. */
+  sellPrice: number;
+  /** An object specifying a sell price per item level. This will override sellPrice. */
+  levelPrice?: {[level: number]: number};
+}
+
 export interface MapDropRate {
   map: MapKey;
   rate: number;
@@ -51,6 +60,7 @@ export interface Item {
   upgrade?: UpgradeInstructions;
   compound?: CompoundInstructions;
   vendor?: VendorInstructions;
+  trade?: TradeInstructions;
   crafting?: GCraft;
 }
 
@@ -481,6 +491,16 @@ export var Items: {[name: string]: Item} = {
       buy: false,
       keep: 10,
       buyLocation: "market"
+    }
+  },
+
+  essenceoffire: {
+    name: "essenceoffire",
+    meta: G.items["essenceoffire"],
+    price: G.items["essenceoffire"].g,
+    trade: {
+      buyMax: 88_000,
+      sellPrice: 0
     }
   },
 }
