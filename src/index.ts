@@ -4,7 +4,8 @@
 // Just set attack_mode to true and ENGAGE!
 
 import { savePosition } from "./Utils/Functions";
-import { FarmerCharacter, MerchantCharacter } from "./Character";
+import { MerchantCharacter } from "./Character";
+import { FarmerCharacter } from "./FarmerCharacter";
 
 let globalAny = <any>globalThis;
 var char: MerchantCharacter | FarmerCharacter | null = null;

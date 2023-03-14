@@ -1,4 +1,5 @@
-import { BaseCharacter, FarmerCharacter, MerchantCharacter } from "./Character";
+import { BaseCharacter, MerchantCharacter } from "./Character";
+import { FarmerCharacter } from "./FarmerCharacter";
 import { CMRequests, Request } from "./CMRequests";
 import { CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMRequestSetLeader, CMRequestSetLeaderReply, CMTask, LocalChacterInfo } from "./Types";
 
