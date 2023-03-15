@@ -8,7 +8,7 @@ import { canUseSkill } from "./Utils/Functions";
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
   attack_mode: "single" | "multiple" = "single";
-  default_type: MonsterKey = "crabx";
+  default_type: MonsterKey = "spider";
   current_type: MonsterKey = this.default_type;
   goals: { [name: string]: FarmerGoal; } = {};
 
@@ -183,15 +183,20 @@ function getMonstersThatTarget(entity: Entity) {
 }
 
 export class PriestCharacter extends FarmerCharacter {
+  supportRunning: boolean = false;
+  needsHeal: string[] = [];
   async supportSkills(): Promise<void> {
+    if (this.supportRunning) return;
+    this.supportRunning = true;
+
     let members = Object.keys(get_party()).map((m) => get_player(m)).filter((m) => m)
                   .sort((a, b) => { return (b.max_hp - b.hp) - (a.max_hp - a.hp)});
 
     let totalLow = 0;
     for (let member of members) {
       if (member.hp <= member.max_hp - (character.heal / 2)) {
-        if (canUseSkill("heal") && is_in_range(member, "heal")) {
-          await use_skill("heal", member);
+        if (this.needsHeal.includes(member.name)) {
+          this.needsHeal.push(member.name);
         }
       }
       if (member.name !== character.name && getMonstersThatTarget(member).length > 0) {
@@ -205,6 +210,8 @@ export class PriestCharacter extends FarmerCharacter {
     }
 
     if (totalLow >= 1 && canUseSkill("partyheal")) await use_skill("partyheal");
+
+    this.supportRunning = false;
   }
 
   async attack(target: Entity) {
@@ -217,7 +224,15 @@ export class PriestCharacter extends FarmerCharacter {
       catch (error) {
         console.error("Error in skill", error);
       }
-      if (can_attack(target)) {
+      let healTarget;
+      if (this.needsHeal.length > 0) {
+        healTarget = get_player(this.needsHeal[0]);
+      }
+      if (healTarget && canUseSkill("heal") && is_in_range(healTarget, "heal")) {
+        set_message("Healing");
+        use_skill("heal", healTarget);
+        this.needsHeal.splice(0, 1);
+      } else if (can_attack(target)) {
         set_message("Attacking");
         attack(target);
       }
