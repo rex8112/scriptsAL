@@ -23,7 +23,16 @@ export interface LocalChacterInfo {
 export interface FarmerGoal {
   name: MonsterKey;
   for: {name: ItemKey | "gold", amount: number}[];
+  issued: Date;
   focus?: true;
+}
+
+export interface Party {
+  members: string[];
+  leader: string;
+  /** Current goal */
+  goal?: FarmerGoal;
+  tank?: string;
 }
 
 export type CMTask = CMRequestInfo | CMRequestInfoReply | CMRequestItems 
