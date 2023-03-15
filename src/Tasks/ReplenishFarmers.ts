@@ -99,6 +99,7 @@ export class ReplenishFarmersTask extends Task {
       await Promise.all(promises);
     }
     await this.char.updateCharacterInfo();
+    await sleep(500);
     await this.char.cleanInventory();
   }
 }
