@@ -159,6 +159,14 @@ export function canUseSkill(skill: SkillKey): boolean {
   return result;
 }
 
+export function callAPI(call: string): Promise<any> {
+  let p = new Promise((resolve) => {
+    let dataReceived = (data: any) => { resolve(data) };
+    parent.api_call(call, {}, {callback: (data) => { dataReceived(data); }});
+  });
+  return p;
+}
+
 function min(arg0: number, arg1: number): number {
     if (arg0 < arg1) 
         return arg0

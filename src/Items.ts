@@ -426,6 +426,24 @@ export var Items: {[name: string]: Item} = {
     }
   },
 
+  dexring: {
+    name: "dexring",
+    meta: G.items["dexring"],
+    price: G.items["dexring"].g,
+    compound: {
+      keep: 1,
+      max: 4,
+      primling: 20,
+      primordial: 20
+    },
+    vendor: {
+      buyLocation: "market",
+      buy: false,
+      sell: true,
+      keep: 0
+    }
+  },
+
   // Consumables
   hpot0: {
     name: "hpot0",

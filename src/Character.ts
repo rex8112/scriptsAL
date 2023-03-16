@@ -1,9 +1,9 @@
-import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, IPosition, ItemInfo, ItemKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
+import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, IPosition, ItemInfo, ItemKey, MerchantsApiResponse, TradeItemInfo, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
 import { LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
-import { getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
+import { callAPI, getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
 import { Bank, BankPosition } from "./Bank";
 import { TaskController } from "./Tasks";
 import { CheckCompound, CompoundItems } from "./Tasks/CompoundItems";
@@ -243,6 +243,57 @@ export class MerchantCharacter extends BaseCharacter {
         nums.push(data.num);
     }
     return nums;
+  }
+
+  async tradeBuy(items: {item: ItemKey, level?: number, amount: number}[], allow_cross_server: boolean = false) {
+    let data: MerchantsApiResponse[] = await callAPI("pull_merchants");
+    let chars = data[0].chars;
+    let merchantOrders: {[merchant: string]: {location: Location, buy: {slot: TradeSlotType, quantity: number}[]}} = {};
+    let results = [];
+    items.forEach(_ => results.push(false));
+    let totalGold = 0;
+    for (let merch of chars) {
+      if (allow_cross_server === false && merch.server !== `${server.region} ${server.id}`) continue;
+
+      let buyOrders: {slot: TradeSlotType, quantity: number}[] = [];
+      for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+        let data = Items[item.item];
+        if (data === undefined || data.trade === undefined) continue;
+        for (let slot in merch.slots) {
+          let trade = merch.slots[<TradeSlotType>slot];
+          if (!trade) continue;
+          if (trade.name !== item.item) continue;
+          if (item.level !== undefined && item.level !== trade.level) continue;
+          if (trade.q && trade.q < item.amount) continue;
+          if (trade.price > data.trade.buyMax) continue;
+          buyOrders.push({slot: <TradeSlotType>slot, quantity: item.amount});
+          totalGold += trade.price * item.amount;
+        }
+      }
+      if (buyOrders.length > 0) {
+        let order = {location: Location.fromPosition(merch), buy: buyOrders};
+        merchantOrders[merch.name] = order;
+      }
+    }
+
+    if (character.gold < totalGold) {
+      if (this.bank.gold < totalGold) {
+        return;
+      }
+      await this.bank.withdrawGold(totalGold - character.gold);
+    }
+
+    for (let mname in merchantOrders) {
+      let order = merchantOrders[mname];
+      await this.move(order.location.asPosition());
+      let merchant = get_player(mname);
+      if (!merchant) continue;
+      
+      for (let buyOrder of order.buy) {
+        await trade_buy(merchant, buyOrder.slot, buyOrder.quantity);
+      }
+    }
   }
 
   needFarmerRun(): boolean {
