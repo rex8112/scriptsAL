@@ -155,7 +155,7 @@ export function canUseSkill(skill: SkillKey): boolean {
   let cooldownDone = !is_on_cooldown(skill);
   let correctLevel = data.level === undefined || data.level <= character.level;
   let hasMana = data.mp === undefined || data.mp <= character.mp;
-  let result = cooldownDone && correctLevel && hasMana;
+  let result = cooldownDone && correctLevel && hasMana && !character.rip;
   return result;
 }
 
