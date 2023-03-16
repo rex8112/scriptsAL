@@ -11,6 +11,7 @@ export class FarmerCharacter extends BaseCharacter {
   default_type: MonsterKey = "spider";
   current_type: MonsterKey = this.default_type;
   goals: { [name: string]: FarmerGoal; } = {};
+  gettingUnstuck: boolean = false;
 
   supportInterval?: NodeJS.Timer;
 
@@ -58,6 +59,7 @@ export class FarmerCharacter extends BaseCharacter {
   async supportSkills() {}
 
   async run() {
+    if (character.rip) return;
     if (this.mode == "follower") {
       if (this.leader === null)
         return;
@@ -122,7 +124,7 @@ export class FarmerCharacter extends BaseCharacter {
   async attack(target: Entity) {
     change_target(target);
     let k = setInterval(() => { this.kite(target); }, 250);
-    while (target.dead === undefined) {
+    while (target.dead === undefined && !character.rip) {
       if (can_attack(target)) {
         set_message("Attacking");
         attack(target);
@@ -133,9 +135,9 @@ export class FarmerCharacter extends BaseCharacter {
   }
 
   async kite(target: Entity) {
-    let tries = 0;
-    let free = false;
+    if (this.gettingUnstuck) return;
     let pos = Vector.fromEntity(character);
+    let targetPos = Vector.fromEntity(target);
 
     for (let id in parent.entities) {
       let entity = parent.entities[id];
@@ -161,11 +163,34 @@ export class FarmerCharacter extends BaseCharacter {
       }
 
       if (move) {
+        if (entityPos.isEqual(pos)) {
+          let u = targetPos.vectorTowards(pos);
+          if (Math.random() >= 0.5 ? 1 : -1) {
+            u = u.perpendicular();
+          } else {
+            u = u.perpendicular(true);
+          }
+          let d = u.multiply(distanceToBe);
+          pos = pos.addVector(d);
+        }
         pos = entityPos.pointTowards(pos, distanceToBe);
       }
     }
 
-    move(pos.x, pos.y);
+    if (can_move_to(pos.x, pos.y)) {
+      move(pos.x, pos.y);
+
+    } else if(can_move({map: character.map, x: targetPos.x, y: targetPos.y, going_x: pos.x, going_y: pos.y, base: character.base}) &&
+              pos.distanceFromSqr(Vector.fromEntity(character)) > 100) {
+      this.gettingUnstuck = true;
+      try {
+        await this.move(pos);
+      } finally {
+        this.gettingUnstuck = false;
+      }
+    } else {
+      move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50));
+    }
   }
 }
 
@@ -186,38 +211,39 @@ export class PriestCharacter extends FarmerCharacter {
   supportRunning: boolean = false;
   needsHeal: string[] = [];
   async supportSkills(): Promise<void> {
-    if (this.supportRunning) return;
-    this.supportRunning = true;
-
-    let members = Object.keys(get_party()).map((m) => get_player(m)).filter((m) => m)
-                  .sort((a, b) => { return (b.max_hp - b.hp) - (a.max_hp - a.hp)});
-
-    let totalLow = 0;
-    for (let member of members) {
-      if (member.hp <= member.max_hp - (character.heal / 2)) {
-        if (this.needsHeal.includes(member.name)) {
-          this.needsHeal.push(member.name);
+    try {
+      if (this.supportRunning) return;
+      this.supportRunning = true;
+  
+      let members = Object.keys(get_party()).map((m) => get_player(m)).filter((m) => m)
+                    .sort((a, b) => { return (b.max_hp - b.hp) - (a.max_hp - a.hp)});
+  
+      let totalLow = 0;
+      for (let member of members) {
+        if (member.hp <= member.max_hp - (character.heal / 2)) {
+          if (this.needsHeal.includes(member.name)) {
+            this.needsHeal.push(member.name);
+          }
         }
-      }
-      if (member.name !== character.name && getMonstersThatTarget(member).length > 0) {
-        if (canUseSkill("absorb") && is_in_range(member, "absorb")) {
-          await use_skill("absorb", member);
+        if (member.name !== character.name && getMonstersThatTarget(member).length > 0) {
+          if (canUseSkill("absorb") && is_in_range(member, "absorb")) {
+            await use_skill("absorb", member);
+          }
         }
+  
+        // If they are still low, mark them as a party heal candidate.
+        if (member.hp <= member.max_hp - 500) totalLow++;
       }
-
-      // If they are still low, mark them as a party heal candidate.
-      if (member.hp <= member.max_hp - 500) totalLow++;
-    }
-
-    if (totalLow >= 1 && canUseSkill("partyheal")) await use_skill("partyheal");
-
+  
+      if (totalLow >= 1 && canUseSkill("partyheal")) await use_skill("partyheal");
+    } catch {}
     this.supportRunning = false;
   }
 
   async attack(target: Entity) {
     change_target(target);
     let k = setInterval(() => { this.kite(target); }, 250);
-    while (target.dead === undefined) {
+    while (target.dead === undefined && !character.rip) {
       try{
         if (!target.s["cursed"] && canUseSkill("curse") && is_in_range(target, "curse")) await use_skill("curse");
       }
