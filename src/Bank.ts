@@ -24,12 +24,17 @@ export class Bank {
    */
   async moveToPack(pack: BankPack | BankPackTypeItemsOnly | "gold") {
     let map: MapKey;
-    if (pack === "gold") {
-      map = "bank";
-    } else if (pack instanceof BankPack) {
-      map = bank_packs[pack.name][0];
-    } else {
-      map = bank_packs[pack][0];
+    try {
+      if (pack === "gold") {
+        map = "bank";
+      } else if (pack instanceof BankPack) {
+        map = bank_packs[pack.name][0];
+      } else {
+        map = bank_packs[pack][0];
+      }
+    } catch (error) {
+      console.error("Error in moveToPack: ", pack);
+      throw(error);
     }
     while (character.map !== map) {
       console.log(character.map, map);
