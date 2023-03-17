@@ -8,7 +8,7 @@ import { canUseSkill } from "./Utils/Functions";
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
   attack_mode: "single" | "multiple" = "single";
-  default_type: MonsterKey = "spider";
+  default_type: MonsterKey = "crabx";
   current_type: MonsterKey = this.default_type;
   goals: { [name: string]: FarmerGoal; } = {};
   gettingUnstuck: boolean = false;
