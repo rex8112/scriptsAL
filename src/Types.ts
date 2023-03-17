@@ -38,7 +38,7 @@ export interface Party {
 export type CMTask = CMRequestInfo | CMRequestInfoReply | CMRequestItems 
                       | CMRequestItemsReply | CMRequestGold | CMRequestGoldReply 
                       | CMRequestPartyAccept | CMRequestPartyAcceptReply | CMRequestLeaveParty
-                      | CMRequestLeavePartyReply | CMRequestSetLeader;
+                      | CMRequestLeavePartyReply | CMRequestSetLeader | CMRequestAddFarmerGoal;
 
 export interface CMRequestInfo {
   task: "request_info";
@@ -97,5 +97,15 @@ export interface CMRequestSetLeader {
 
 export interface CMRequestSetLeaderReply {
   task: "request_set_leader_reply";
+  data: boolean;
+}
+
+export interface CMRequestAddFarmerGoal {
+  task: "request_add_goal";
+  data: FarmerGoal;
+}
+
+export interface CMRequestAddFarmerGoalReply {
+  task: "request_add_goal_reply";
   data: boolean;
 }

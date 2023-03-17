@@ -10,7 +10,7 @@ export class FarmerCharacter extends BaseCharacter {
   attack_mode: "single" | "multiple" = "single";
   default_type: MonsterKey = "crabx";
   current_type: MonsterKey = this.default_type;
-  goals: { [name: string]: FarmerGoal; } = {};
+  goals: FarmerGoal[] = [];
   gettingUnstuck: boolean = false;
 
   supportInterval?: NodeJS.Timer;
@@ -26,23 +26,28 @@ export class FarmerCharacter extends BaseCharacter {
     if (!this.supportInterval) this.supportInterval = setInterval(() => { this.supportSkills(); }, 250);
   }
 
-  onLoot(loot: LootEvent) {
-    let goal = this.goals[this.current_type];
-    if (!goal)
-      return;
+  addGoal(goal: FarmerGoal) {
+    this.goals.push(goal);
+  }
 
-    for (let f of goal.for) {
-      if (f.name === "gold") {
-        f.amount -= loot.gold;
-      } else if (Object.keys(loot.items).includes(f.name)) {
-        let items = loot.items.filter(i => { i.name === f.name; });
-        if (!items)
-          continue;
-        // I don't know, maybe you can loot multiple of an item.
-        for (let item of items)
-          f.amount -= item.q ?? 1;
+  onLoot(loot: LootEvent) {
+    for (let goal of this.goals) {
+      if (goal.name !== this.current_type) continue;
+      
+      for (let f of goal.for) {
+        if (f.name === "gold") {
+          f.amount -= loot.gold;
+        } else if (Object.keys(loot.items).includes(f.name)) {
+          let items = loot.items.filter(i => { i.name === f.name; });
+          if (!items)
+            continue;
+          // I don't know, maybe you can loot multiple of an item.
+          for (let item of items)
+            f.amount -= item.q ?? 1;
+        }
       }
     }
+
   }
 
   setLeader(leader: string) {

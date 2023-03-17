@@ -1,7 +1,8 @@
 import { BaseCharacter, MerchantCharacter } from "./Character";
 import { FarmerCharacter } from "./FarmerCharacter";
 import { CMRequests, Request } from "./CMRequests";
-import { CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMRequestSetLeader, CMRequestSetLeaderReply, CMTask, LocalChacterInfo } from "./Types";
+import { CMRequestAddFarmerGoal, CMRequestAddFarmerGoalReply, CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMRequestSetLeader, CMRequestSetLeaderReply, CMTask, FarmerGoal, LocalChacterInfo } from "./Types";
+import { isFarmerCharacter } from "./TypeChecks";
 
 export class CharacterMessager {
   cmr: CMRequests;
@@ -24,6 +25,8 @@ export class CharacterMessager {
       this.requestLeavePartyReceived(<Request<CMRequestLeaveParty>>message);
     } else if (message.message.task === "request_set_leader") {
       this.requestSetLeaderReceived(<Request<CMRequestSetLeader>>message);
+    } else if (message.message.task === "request_add_goal") {
+      this.requestAddFarmerGoalReceived(<Request<CMRequestAddFarmerGoal>>message);
     } else {
       message.respond({status: 400, message: `Invalid Request: ${message.message?.task} not recognized.`});
     }
@@ -199,6 +202,28 @@ export class CharacterMessager {
 
   requestSetLeaderReceived(request: Request<CMRequestSetLeader>) {
     this.char.setLeader(request.message.data);
+    request.respondOK(true);
+  }
+
+  async requestAddFarmerGoal(name: string, goal: FarmerGoal) {
+    var request: CMRequestAddFarmerGoal = {
+      task: "request_add_goal",
+      data: goal
+    }
+    var resp = await this.cmr.request(name, request, 5_000);
+    if (resp.status == 200) {
+      return <CMRequestAddFarmerGoalReply>resp.message;
+    }
+    return null;
+  }
+
+  requestAddFarmerGoalReceived(request: Request<CMRequestAddFarmerGoal>) {
+    if (!isFarmerCharacter(this.char)) {
+      request.respond({status: 400, message: "Character is not a farmer"});
+      return;
+    }
+
+    this.char.addGoal(request.message.data);
     request.respondOK(true);
   }
 }
