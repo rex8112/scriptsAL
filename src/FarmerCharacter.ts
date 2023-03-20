@@ -31,23 +31,30 @@ export class FarmerCharacter extends BaseCharacter {
   }
 
   onLoot(loot: LootEvent) {
-    for (let goal of this.goals) {
+    let toRemove: number[] = [];
+    for (let i = 0; i < this.goals.length; i++) {
+      let goal = this.goals[i];
       if (goal.name !== this.current_type) continue;
-      
-      for (let f of goal.for) {
-        if (f.name === "gold") {
-          f.amount -= loot.gold;
-        } else if (Object.keys(loot.items).includes(f.name)) {
-          let items = loot.items.filter(i => { i.name === f.name; });
-          if (!items)
-            continue;
-          // I don't know, maybe you can loot multiple of an item.
-          for (let item of items)
-            f.amount -= item.q ?? 1;
-        }
+
+      let f = goal.for
+      if (f.name === "gold") {
+        f.amount -= loot.gold;
+      } else if (Object.keys(loot.items).includes(f.name)) {
+        let items = loot.items.filter(i => { i.name === f.name; });
+        if (!items) continue;
+        // I don't know, maybe you can loot multiple of an item.
+        for (let item of items)
+          f.amount -= item.q ?? 1;
       }
+      if (f.amount <= 0) toRemove.push(i);
     }
 
+    if (toRemove.length > 0) {
+      toRemove.sort((a, b) => { return b - a });
+      for (let i of toRemove) {
+        this.goals.splice(i, 1);
+      }
+    }
   }
 
   setLeader(leader: string) {
@@ -83,6 +90,7 @@ export class FarmerCharacter extends BaseCharacter {
 
       await this.attack(t);
     } else if (this.mode == "leader") {
+      this.checkTargetType();
       let target = await this.find_target();
       if (target === null) {
         await this.move(this.current_type);
@@ -92,6 +100,14 @@ export class FarmerCharacter extends BaseCharacter {
         return;
 
       await this.attack(target);
+    }
+  }
+
+  checkTargetType() {
+    if (this.goals.length) {
+      this.current_type = this.goals[0].name;
+    } else {
+      this.current_type = this.default_type;
     }
   }
 

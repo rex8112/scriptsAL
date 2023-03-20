@@ -1,7 +1,7 @@
-import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, IPosition, ItemInfo, ItemKey, MerchantsApiResponse, TradeItemInfo, TradeSlotType } from "typed-adventureland";
+import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, IPosition, ItemInfo, ItemKey, MerchantsApiResponse, MonsterKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
 import { CMRequests } from "./CMRequests";
-import { LocalChacterInfo } from "./Types";
+import { FarmerGoal, LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
 import { callAPI, getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
 import { Bank, BankPosition } from "./Bank";
@@ -294,6 +294,27 @@ export class MerchantCharacter extends BaseCharacter {
         await trade_buy(merchant, buyOrder.slot, buyOrder.quantity);
       }
     }
+  }
+
+  async addFarmerGoal(item: ItemKey, quantity: number) {
+    if (!this.leader) return false;
+    let mobs: [name: MonsterKey, rate: number][] = [];
+    for (let mname in G.drops.monsters) {
+      let drops = G.drops.monsters[<MonsterKey>mname];
+      if (!drops) continue;
+      for (let drop of drops) {
+        let [rate, iname] = drop;
+        if (iname === item) {
+          mobs.push([<MonsterKey>mname, rate]);
+        }
+      }
+    }
+    if (mobs.length <= 0) return false;
+    mobs.sort((a, b) => { return b[1] - a[1]; });
+    let chosen = mobs[0];
+    let goal: FarmerGoal = {name: chosen[0], for: {name: item, amount: quantity}, issued: new Date()};
+    let resp = await this.CM.requestAddFarmerGoal(this.leader, goal);
+    return resp?.data ?? false;
   }
 
   needFarmerRun(): boolean {
