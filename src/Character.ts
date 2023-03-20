@@ -312,7 +312,7 @@ export class MerchantCharacter extends BaseCharacter {
     if (mobs.length <= 0) return false;
     mobs.sort((a, b) => { return b[1] - a[1]; });
     let chosen = mobs[0];
-    let goal: FarmerGoal = {name: chosen[0], for: {name: item, amount: quantity}, issued: new Date()};
+    let goal: FarmerGoal = {name: chosen[0], for: {name: item, amount: quantity}, issued: Date.now()};
     let resp = await this.CM.requestAddFarmerGoal(this.leader, goal);
     return resp?.data ?? false;
   }
