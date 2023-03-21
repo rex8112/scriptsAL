@@ -14,10 +14,8 @@ if (character.ctype == "merchant") {
   char = new MerchantCharacter(character);
 } else if (character.ctype == "priest") {
   char = new PriestCharacter(character);
-  char.mode = "leader";
 } else {
   char = new FarmerCharacter(character);
-  char.mode = "leader";
 }
 char.startRun();
 globalAny.c = char;

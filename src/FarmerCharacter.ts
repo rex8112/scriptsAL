@@ -28,6 +28,15 @@ export class FarmerCharacter extends BaseCharacter {
 
   addGoal(goal: FarmerGoal) {
     this.goals.push(goal);
+    this.saveGoals();
+  }
+
+  saveGoals() {
+    set("farmGoals", this.goals);
+  }
+
+  loadGoals() {
+    this.goals = get("farmGoals") ?? [];
   }
 
   onLoot(loot: LootEvent) {
@@ -57,12 +66,15 @@ export class FarmerCharacter extends BaseCharacter {
         this.goals.splice(i, 1);
       }
     }
+    if (this.mode === "leader")
+      this.saveGoals();
   }
 
   setLeader(leader: string) {
     super.setLeader(leader);
     if (leader === this.name) {
       this.mode = "leader";
+      this.loadGoals();
       game_log("Becoming Leader", "orange");
     } else {
       this.mode = "follower";
