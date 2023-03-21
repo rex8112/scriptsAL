@@ -7,9 +7,9 @@ import { canUseSkill } from "./Utils/Functions";
 
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
-  attack_mode: "single" | "multiple" = "single";
-  default_type: MonsterKey = "crabx";
-  current_type: MonsterKey = this.default_type;
+  attackMode: "single" | "multiple" = "single";
+  defaultType: MonsterKey = "crabx";
+  currentType: MonsterKey = this.defaultType;
   goals: FarmerGoal[] = [];
   gettingUnstuck: boolean = false;
 
@@ -34,17 +34,19 @@ export class FarmerCharacter extends BaseCharacter {
     let toRemove: number[] = [];
     for (let i = 0; i < this.goals.length; i++) {
       let goal = this.goals[i];
-      if (goal.name !== this.current_type) continue;
+      if (goal.name !== this.currentType) continue;
 
       let f = goal.for
       if (f.name === "gold") {
         f.amount -= loot.gold;
-      } else if (Object.keys(loot.items).includes(f.name)) {
-        let items = loot.items.filter(i => { i.name === f.name; });
+      } else if (loot.items) {
+        let items = loot.items.filter(i => { return i.name === f.name; });
         if (!items) continue;
         // I don't know, maybe you can loot multiple of an item.
-        for (let item of items)
+        for (let item of items) {
+          console.log(item);
           f.amount -= item.q ?? 1;
+        }
       }
       if (f.amount <= 0) toRemove.push(i);
     }
@@ -93,7 +95,7 @@ export class FarmerCharacter extends BaseCharacter {
       this.checkTargetType();
       let target = await this.find_target();
       if (target === null) {
-        await this.move(this.current_type);
+        await this.move(this.currentType);
         target = await this.find_target();
       }
       if (target === null)
@@ -105,9 +107,9 @@ export class FarmerCharacter extends BaseCharacter {
 
   checkTargetType() {
     if (this.goals.length) {
-      this.current_type = this.goals[0].name;
+      this.currentType = this.goals[0].name;
     } else {
-      this.current_type = this.default_type;
+      this.currentType = this.defaultType;
     }
   }
 
@@ -121,7 +123,7 @@ export class FarmerCharacter extends BaseCharacter {
       let entity = parent.entities[id];
       let epos = Vector.fromEntity(entity);
       let new_target = null;
-      if (entity.mtype !== this.current_type)
+      if (entity.mtype !== this.currentType)
         continue;
       if (!entity.target)
         new_target = entity;
@@ -129,9 +131,9 @@ export class FarmerCharacter extends BaseCharacter {
         // Override any future checks. SAVE THE MERCHANT!
         target = entity;
         break;
-      } else if (this.attack_mode === "single" && Object.keys(get_party()).includes(entity.target)) {
+      } else if (this.attackMode === "single" && Object.keys(get_party()).includes(entity.target)) {
         new_target = entity;
-      } else if (this.attack_mode === "multiple" && !Object.keys(get_party()).includes(entity.target)) {
+      } else if (this.attackMode === "multiple" && !Object.keys(get_party()).includes(entity.target)) {
         new_target = entity;
       }
       if (target === null)
