@@ -1,6 +1,6 @@
 import { MerchantCharacter } from "../Character";
 import { Items } from "../Items";
-import { Task } from "../Tasks";
+import { Task } from "../MerchantTasks";
 import { LocalChacterInfo } from "../Types";
 import { getFreeSlots, getItemPosition, getItemQuantity, getPosition, get_position, moveToCharacter } from "../Utils/Functions";
 

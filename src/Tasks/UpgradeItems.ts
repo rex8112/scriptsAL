@@ -2,7 +2,7 @@ import { ItemInfo, ItemKey } from "typed-adventureland";
 import { BankPosition } from "../Bank";
 import { MerchantCharacter } from "../Character";
 import { Items } from "../Items";
-import { BackgroundTask, Task, TaskController } from "../Tasks";
+import { BackgroundTask, Task, MerchantTaskController } from "../MerchantTasks";
 import { getFreeSlots, getItemPosition, getItemQuantity } from "../Utils/Functions";
 
 export class CheckUpgrade extends BackgroundTask {
@@ -13,9 +13,9 @@ export class CheckUpgrade extends BackgroundTask {
   msinterval = 30_000;
 
   char: MerchantCharacter;
-  controller: TaskController;
+  controller: MerchantTaskController;
 
-  constructor(char: MerchantCharacter, controller: TaskController) {
+  constructor(char: MerchantCharacter, controller: MerchantTaskController) {
     super(char);
     this.char = char;
     this.controller = controller;

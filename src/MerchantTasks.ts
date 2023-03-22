@@ -1,17 +1,17 @@
-import { BaseCharacter } from "./Character";
+import { MerchantCharacter } from "./Character";
 
 export abstract class Task {
   abstract name: string;
   abstract displayName: string;
   abstract cancellable: boolean;
   id: number = 0;
-  char: BaseCharacter;
+  char: MerchantCharacter;
   _cancelling: boolean = false;
   _running: boolean = false;
   _priority: number = 0;
   background: boolean = false;
 
-  constructor(char: BaseCharacter) {
+  constructor(char: MerchantCharacter) {
     this.char = char
   }
 
@@ -81,8 +81,8 @@ export abstract class BackgroundTask extends Task {
   }
 }
 
-export class TaskController {
-  char: BaseCharacter;
+export class MerchantTaskController {
+  char: MerchantCharacter;
   tasks: {[id: number]: Task};
   running: boolean = false;
   backgroundTasks: {[id: number]: Task};
@@ -90,7 +90,7 @@ export class TaskController {
   idCount = 1;
   _pause = false;
 
-  constructor(char: BaseCharacter) {
+  constructor(char: MerchantCharacter) {
     this.char = char;
     this.tasks = {};
     this.backgroundTasks = {};
@@ -110,7 +110,9 @@ export class TaskController {
       console.log("Running task", task_to_run.displayName);
       game_log(`Starting Task: ${task_to_run.displayName}`, "orange");
       try {
+        await close_stand();
         await task_to_run.run();
+        await open_stand();
       } catch (error) {
         console.error(`Error in ${task_to_run.name}`, error);
         game_log(`Error in Task: ${task_to_run.displayName}`, "red");

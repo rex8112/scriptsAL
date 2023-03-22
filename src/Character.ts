@@ -5,7 +5,7 @@ import { FarmerGoal, LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
 import { callAPI, getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
 import { Bank, BankPosition } from "./Bank";
-import { TaskController } from "./Tasks";
+import { MerchantTaskController } from "./MerchantTasks";
 import { CheckCompound, CompoundItems } from "./Tasks/CompoundItems";
 import { CheckUpgrade, UpgradeItems } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
@@ -101,11 +101,11 @@ export class MerchantCharacter extends BaseCharacter {
   updateTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
-  taskController: TaskController;
+  taskController: MerchantTaskController;
 
   constructor(ch: Character) {
     super(ch);
-    this.taskController = new TaskController(this);
+    this.taskController = new MerchantTaskController(this);
     this.taskController.run();
     this.updateCharacterInfo();
   }
@@ -115,8 +115,8 @@ export class MerchantCharacter extends BaseCharacter {
 
     if (this.updateTask === null)
       this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
-    if (this.standTask === null)
-      this.standTask = setInterval(() => { this.open_close_stand() }, 150);
+    //if (this.standTask === null)
+    //  this.standTask = setInterval(() => { this.open_close_stand() }, 150);
     if (this.inspectMerchantTask === null)
       this.inspectMerchantTask = setInterval(() => { this.inspectNearbyMerchants() }, 5_000);
     
