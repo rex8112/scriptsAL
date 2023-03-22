@@ -115,8 +115,8 @@ export class MerchantCharacter extends BaseCharacter {
 
     if (this.updateTask === null)
       this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
-    //if (this.standTask === null)
-    //  this.standTask = setInterval(() => { this.open_close_stand() }, 150);
+    if (this.standTask === null)
+      this.standTask = setInterval(() => { this.open_close_stand() }, 150);
     if (this.inspectMerchantTask === null)
       this.inspectMerchantTask = setInterval(() => { this.inspectNearbyMerchants() }, 5_000);
     
@@ -136,6 +136,8 @@ export class MerchantCharacter extends BaseCharacter {
   }
 
   open_close_stand() {
+    if (this.taskController.running) return;
+
     if (is_moving(character) && character.standed) {
       close_stand();
     } else if (!is_moving(character) && !character.standed) {
