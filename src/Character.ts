@@ -158,7 +158,7 @@ export class MerchantCharacter extends BaseCharacter {
           let total = this.bank.items[item.name]?.getTotal() ?? 0 + quantity;
           if (total >= data.vendor.keep) {
             let sell = total - data.vendor.keep;
-            if (sell <= 0) {
+            if (sell >= quantity) {
               sellPos.push([Number(i), quantity]);
               continue;
             } else {
