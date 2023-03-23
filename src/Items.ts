@@ -495,7 +495,31 @@ export var Items: {[name: string]: Item} = {
     vendor: {
       sell: true,
       buy: false,
-      keep: 3_000,
+      keep: 9_999,
+      buyLocation: "market"
+    }
+  },
+
+  beewings: {
+    name: "beewings",
+    meta: G.items["beewings"],
+    price: G.items["beewings"].g,
+    vendor: {
+      sell: true,
+      buy: false,
+      keep: 9_999,
+      buyLocation: "market"
+    }
+  },
+
+  seashell: {
+    name: "seashell",
+    meta: G.items["seashell"],
+    price: G.items["seashell"].g,
+    vendor: {
+      sell: true,
+      buy: false,
+      keep: 9_999,
       buyLocation: "market"
     }
   },
@@ -507,7 +531,7 @@ export var Items: {[name: string]: Item} = {
     vendor: {
       sell: true,
       buy: false,
-      keep: 10,
+      keep: 9_999,
       buyLocation: "market"
     }
   },
