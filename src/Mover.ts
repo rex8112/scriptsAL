@@ -1,5 +1,7 @@
 import { IPosition, MapKey, MonsterKey, NpcKey } from "typed-adventureland";
 import { isIPosition, isPositionReal } from "./TypeChecks";
+import Rectangle from "./Utils/Rectangle";
+import { Vector } from "./Utils/Vector";
 
 interface PathActionMove {
   action: "Move";
@@ -175,6 +177,32 @@ export class Mover {
 
     Mover.path = null;
     Mover.stopped = true;
+  }
+
+  static async leaveMonsterArea(): Promise<boolean> {
+    let map = G.maps[character.map];
+    let pos = Vector.fromEntity(character);
+    if (!map.monsters) return true;
+    for (let monster of map.monsters) {
+      if (monster.boundary) {
+        let rect = Rectangle.fromBoundary(monster.boundary);
+        if (rect.isInside(pos)){
+          let point = rect.nearestOutside(pos, 10);
+          console.log(pos, point, rect);
+          return await Mover.moveX(point.x, point.y);
+        }
+      } else if (monster.boundaries) {
+        for (let boundary of monster.boundaries) {
+          let rect = Rectangle.fromBoundary(boundary[1], boundary[2], boundary[3], boundary[4]);
+          if (rect.isInside(pos)) {
+            let point = rect.nearestOutside(pos, 10);
+            console.log(pos, point, rect);
+            return await Mover.moveX(point.x, point.y);
+          }
+        }
+      }
+    }
+    return true;
   }
 
   static async useTown()

@@ -61,7 +61,8 @@ export default class Rectangle {
     return new Rectangle(x, y, h, w);
   }
 
-  static fromBoundary(x: [number, number, number, number], y: any, x2: any, y2: any): Rectangle;
+  static fromBoundary(x: [number, number, number, number], y?: any, x2?: any, y2?: any): Rectangle;
+  static fromBoundary(x: number, y: number, x2: number, y2: number): Rectangle;
   static fromBoundary(x: number | [number, number, number, number], y: number, x2: number, y2: number): Rectangle {
     if (typeof x === "object") {
       let tmp = x;
