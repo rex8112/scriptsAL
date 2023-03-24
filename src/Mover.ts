@@ -207,6 +207,13 @@ export class Mover {
 
   static async useTown()
   {
+    await Mover.leaveMonsterArea();
+    
+    while(is_on_cooldown("use_town"))
+      await sleep(100);
+
+    await use_skill("use_town");
+
     // Attempt to move away from enemies before portaling.
     let monster = get_nearest_monster({});
     while (monster && simple_distance(character, monster) < character.range) {
@@ -218,10 +225,6 @@ export class Mover {
       await sleep(150);
     }
 
-    while(is_on_cooldown("use_town"))
-      await sleep(100);
-
-    await use_skill("use_town");
     await sleep(1000);
     while(is_transporting(character))
       await sleep(500);
