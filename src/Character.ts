@@ -1,13 +1,12 @@
-import { BankPackTypeItemsOnly, CharacterBankInfos, ClassKey, IPosition, ItemInfo, ItemKey, MerchantsApiResponse, MonsterKey, TradeItemInfo, TradeSlotType } from "typed-adventureland";
+import { ClassKey, IPosition, ItemInfo, ItemKey, MerchantsApiResponse, MonsterKey, TradeSlotType } from "typed-adventureland";
 import { Mover } from "./Mover";
-import { CMRequests } from "./CMRequests";
 import { FarmerGoal, LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
-import { callAPI, getItemPosition, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
-import { Bank, BankPosition } from "./Bank";
+import { callAPI, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
+import { Bank } from "./Bank";
 import { MerchantTaskController } from "./MerchantTasks";
-import { CheckCompound, CompoundItems } from "./Tasks/CompoundItems";
-import { CheckUpgrade, UpgradeItems } from "./Tasks/UpgradeItems";
+import { CheckCompound } from "./Tasks/CompoundItems";
+import { CheckUpgrade } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Items } from "./Items";
 import { Location } from "./Utils/Location";

@@ -1,9 +1,9 @@
-import { ItemInfo, ItemKey } from "typed-adventureland";
+import { ItemInfo } from "typed-adventureland";
 import { BankPosition } from "../Bank";
 import { MerchantCharacter } from "../Character";
 import { Items } from "../Items";
 import { BackgroundTask, Task, MerchantTaskController } from "../MerchantTasks";
-import { getFreeSlots, getItemPosition, getItemQuantity } from "../Utils/Functions";
+import { getFreeSlots, getItemPosition } from "../Utils/Functions";
 
 export class CheckUpgrade extends BackgroundTask {
   name = "upgrade_check";

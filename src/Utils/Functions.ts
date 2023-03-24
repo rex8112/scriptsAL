@@ -1,4 +1,4 @@
-import { IPosition, ItemInfo, PositionReal, SkillKey } from "typed-adventureland"
+import { IPosition, ItemInfo, SkillKey } from "typed-adventureland"
 import { BaseCharacter } from "../Character"
 import { LocalChacterInfo } from "../Types"
 import { Location } from "./Location"

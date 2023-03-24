@@ -1,4 +1,4 @@
-import { Entity, IPosition, MapKey } from "typed-adventureland";
+import { Entity, MapKey } from "typed-adventureland";
 import { Vector } from "./Vector";
 
 export class Location {
