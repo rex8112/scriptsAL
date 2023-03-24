@@ -22,7 +22,7 @@ export interface LocalChacterInfo {
 
 export interface FarmerGoal {
   name: MonsterKey;
-  for: {name: ItemKey | "gold", amount: number};
+  for: {name: ItemKey | "gold" | "kills", amount: number};
   issued: number;
   focus?: true;
 }

@@ -48,6 +48,8 @@ export class FarmerCharacter extends BaseCharacter {
       let f = goal.for
       if (f.name === "gold") {
         f.amount -= loot.gold;
+      } else if (f.name === "kills") {
+        f.amount -= 1;
       } else if (loot.items) {
         let items = loot.items.filter(i => { return i.name === f.name; });
         if (!items) continue;
