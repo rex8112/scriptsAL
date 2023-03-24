@@ -21,6 +21,8 @@ export interface CompoundInstructions {
   primordial: number;
   /** Max level to upgrade an item to. */
   max: number;
+  /** Whether or not level zero should be auto compounded */
+  allowZero: boolean;
 }
 
 export interface VendorInstructions {
@@ -344,7 +346,8 @@ export var Items: {[name: string]: Item} = {
       keep: 3,
       max: 4,
       primling: 20,
-      primordial: 20
+      primordial: 20,
+      allowZero: false
     },
     vendor: {
       buyLocation: "market",
@@ -362,7 +365,8 @@ export var Items: {[name: string]: Item} = {
       keep: 3,
       max: 4,
       primling: 20,
-      primordial: 20
+      primordial: 20,
+      allowZero: false
     },
     vendor: {
       buyLocation: "market",
@@ -380,7 +384,8 @@ export var Items: {[name: string]: Item} = {
       keep: 3,
       max: 4,
       primling: 20,
-      primordial: 20
+      primordial: 20,
+      allowZero: false
     },
     vendor: {
       buyLocation: "market",
@@ -398,7 +403,8 @@ export var Items: {[name: string]: Item} = {
       keep: 2,
       max: 4,
       primling: 20,
-      primordial: 20
+      primordial: 20,
+      allowZero: false
     }
   },
 
@@ -410,7 +416,8 @@ export var Items: {[name: string]: Item} = {
       keep: 1,
       max: 4,
       primling: 20,
-      primordial: 20
+      primordial: 20,
+      allowZero: false
     }
   },
 
@@ -422,7 +429,8 @@ export var Items: {[name: string]: Item} = {
       keep: 1,
       max: 4,
       primling: 20,
-      primordial: 20
+      primordial: 20,
+      allowZero: false
     }
   },
 
@@ -434,13 +442,27 @@ export var Items: {[name: string]: Item} = {
       keep: 1,
       max: 4,
       primling: 20,
-      primordial: 20
+      primordial: 20,
+      allowZero: false
     },
     vendor: {
       buyLocation: "market",
       buy: false,
       sell: true,
       keep: 0
+    }
+  },
+
+  orbg: {
+    name: "orbg",
+    meta: G.items["orbg"],
+    price: G.items["orbg"].g,
+    compound: {
+      keep: 3,
+      max: 3,
+      primling: 20,
+      primordial: 20,
+      allowZero: false
     }
   },
 

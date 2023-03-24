@@ -45,7 +45,7 @@ export class CheckCompound extends BackgroundTask {
       if (item.length <= data.compound.keep) continue;
       item.sort((a, b) => b[1] - a[1]);
       let firstZero = item.findIndex(i=>i[1] === 0);
-      if (firstZero === -1) firstZero = 9999;
+      if (firstZero === -1 || data.compound.allowZero === true) firstZero = 9999;
 
       let pruned = item.slice(Math.min(data.compound.keep, firstZero));
       pruned = pruned.filter((pos) => { return pos[1] < (data.compound?.max || 0) });
