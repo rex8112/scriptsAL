@@ -29,8 +29,8 @@ export interface FarmerGoal {
 
 export interface EventData {
   name: EventKey;
-  location: Location;
   entity: MonsterKey;
+  location?: Location | Location[];
 }
 
 export interface Party {

@@ -1,4 +1,4 @@
-import { Entity, LootEvent, MonsterKey } from "typed-adventureland";
+import { Entity, EventKey, LootEvent, MonsterKey } from "typed-adventureland";
 import { FarmerGoal } from "./Types";
 import { Vector } from "./Utils/Vector";
 import { BaseCharacter, get_position } from "./Character";
@@ -37,6 +37,10 @@ export class FarmerCharacter extends BaseCharacter {
 
   loadGoals() {
     this.goals = get("farmGoals") ?? [];
+  }
+
+  onEvent(event: EventKey) {
+
   }
 
   onLoot(loot: LootEvent) {
