@@ -1,4 +1,4 @@
-import { IPosition, ItemInfo, SkillKey } from "typed-adventureland"
+import { ApiCalls, IPosition, ItemInfo, SkillKey } from "typed-adventureland"
 import { BaseCharacter } from "../Character"
 import { LocalChacterInfo } from "../Types"
 import { Location } from "./Location"
@@ -159,11 +159,13 @@ export function canUseSkill(skill: SkillKey): boolean {
   return result;
 }
 
-export function callAPI(call: string): Promise<any> {
-  let p = new Promise((resolve) => {
-    let dataReceived = (data: any) => { resolve(data) };
+export function callAPI<K extends keyof ApiCalls = keyof ApiCalls>(call: K): Promise<[ApiCalls[K]]> {
+  let p: Promise<[ApiCalls[K]]> = new Promise((resolve) => {
+    let dataReceived = (data: [ApiCalls[K]]) => { resolve(data) };
+    
     parent.api_call(call, {}, {callback: (data) => { dataReceived(data); }});
   });
+
   return p;
 }
 
