@@ -1,6 +1,7 @@
-import { Entity, EventKey, LootEvent, MonsterKey } from "typed-adventureland";
-import { FarmerGoal } from "./Types";
+import { Entity, EventKey, LootEvent, MapKey, MonsterKey } from "typed-adventureland";
+import { EventData, EventLocation, FarmerGoal } from "./Types";
 import { Vector } from "./Utils/Vector";
+import Location from "./Utils/Location";
 import { BaseCharacter, get_position } from "./Character";
 import { canUseSkill } from "./Utils/Functions";
 
@@ -11,6 +12,7 @@ export class FarmerCharacter extends BaseCharacter {
   defaultType: MonsterKey = "crabx";
   currentType: MonsterKey = this.defaultType;
   goals: FarmerGoal[] = [];
+  event?: EventData;
   gettingUnstuck: boolean = false;
 
   supportInterval?: NodeJS.Timer;
@@ -18,6 +20,7 @@ export class FarmerCharacter extends BaseCharacter {
   constructor(ch: Character) {
     super(ch);
     ch.on("loot", (data) => { this.onLoot(data); });
+    game.on("event", (data) => { this.onEvent(data); });
   }
 
   startTasks(): void {
@@ -39,8 +42,14 @@ export class FarmerCharacter extends BaseCharacter {
     this.goals = get("farmGoals") ?? [];
   }
 
-  onEvent(event: EventKey) {
-
+  onEvent(event: {name: string, map?: MapKey, x?: number, y?: number}) {
+    let data: EventData;
+    if (event.name === "wabbit" && event.map && event.x !== undefined && event.y !== undefined) {
+      data = {entity: "wabbit", name: <EventKey>event.name, location: Location.fromPosition(<EventLocation>event)};
+    } else {
+      return;
+    }
+    this.event = data;
   }
 
   onLoot(loot: LootEvent) {
