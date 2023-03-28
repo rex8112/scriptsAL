@@ -1,5 +1,6 @@
-import { EventKey, ItemInfo, ItemKey, MonsterKey } from "typed-adventureland";
+import { EventKey, ItemInfo, ItemKey, MapKey, MonsterKey } from "typed-adventureland";
 import { CharacterEntitySlotsInfos } from "typed-adventureland/dist/src/entities/character-entity";
+import Location from "./Utils/Location";
 
 export interface CharacterData {
   gold: number;
@@ -31,6 +32,13 @@ export interface EventData {
   name: EventKey;
   entity: MonsterKey;
   location?: Location | Location[];
+}
+
+export interface EventLocation {
+  name: string;
+  map: MapKey;
+  x: number;
+  y: number;
 }
 
 export interface Party {

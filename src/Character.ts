@@ -9,7 +9,7 @@ import { CheckCompound } from "./Tasks/CompoundItems";
 import { CheckUpgrade } from "./Tasks/UpgradeItems";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
 import { Items } from "./Items";
-import { Location } from "./Utils/Location";
+import Location from "./Utils/Location";
 import { isIPosition } from "./TypeChecks";
 
 export class BaseCharacter {

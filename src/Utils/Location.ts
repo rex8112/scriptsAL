@@ -1,7 +1,7 @@
 import { Entity, MapKey } from "typed-adventureland";
 import { Vector } from "./Vector";
 
-export class Location {
+export default class Location {
   vector: Vector;
   map: MapKey;
   instance: unknown;

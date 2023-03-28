@@ -1,7 +1,7 @@
 import { ApiCalls, IPosition, ItemInfo, SkillKey } from "typed-adventureland"
 import { BaseCharacter } from "../Character"
 import { LocalChacterInfo } from "../Types"
-import { Location } from "./Location"
+import Location from "./Location"
 import { Vector } from "./Vector"
 
 var lastPotion = new Date()
