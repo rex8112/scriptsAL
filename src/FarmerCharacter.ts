@@ -140,17 +140,18 @@ export class FarmerCharacter extends BaseCharacter {
     }
   }
 
-  async find_target() {
+  async find_target(monType?: MonsterKey) {
     let cpos = Vector.fromEntity(character);
     let target = get_targeted_monster();
     if (target !== null)
       return target;
 
+    monType = monType ?? this.currentType;
     for (let id in parent.entities) {
       let entity = parent.entities[id];
       let epos = Vector.fromEntity(entity);
       let new_target = null;
-      if (entity.mtype !== this.currentType)
+      if (entity.mtype !== monType)
         continue;
       if (!entity.target)
         new_target = entity;
