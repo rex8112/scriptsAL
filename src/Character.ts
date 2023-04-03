@@ -49,7 +49,11 @@ export class BaseCharacter {
 
   async startRun() {
     this.startTasks();
-    await this.run();
+    try {
+      await this.run();
+    } catch (e) {
+      console.error("Error in run: ", e);
+    }
     setTimeout(() => { this.startRun() }, 500);
   }
 

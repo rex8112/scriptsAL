@@ -4,6 +4,7 @@ import { Vector } from "./Utils/Vector";
 import Location from "./Utils/Location";
 import { BaseCharacter, get_position } from "./Character";
 import { canUseSkill } from "./Utils/Functions";
+import GameEvent from "./GameEvents";
 
 
 export class FarmerCharacter extends BaseCharacter {
@@ -42,14 +43,17 @@ export class FarmerCharacter extends BaseCharacter {
     this.goals = get("farmGoals") ?? [];
   }
 
-  onEvent(event: {name: string, map?: MapKey, x?: number, y?: number}) {
+  async onEvent(event: {name: string, map?: MapKey, x?: number, y?: number}) {
     let data: EventData;
-    if (event.name === "wabbit" && event.map && event.x !== undefined && event.y !== undefined) {
-      data = {entity: "wabbit", name: <EventKey>event.name, location: Location.fromPosition(<EventLocation>event)};
+    console.log(event);
+    if (event.name === "wabbit") {
+      data = {entity: "wabbit", name: <EventKey>event.name};
     } else {
       return;
     }
+    await sleep(1000);
     this.event = data;
+    console.log(data);
   }
 
   onLoot(loot: LootEvent) {
@@ -101,7 +105,9 @@ export class FarmerCharacter extends BaseCharacter {
 
   async run() {
     if (character.rip) return;
-    if (this.mode == "follower") {
+    if (this.event && GameEvent[this.event.name] && GameEvent[this.event.name][this.mode]) {
+      await GameEvent[this.event.name][this.mode](this);
+    } else if (this.mode == "follower") {
       if (this.leader === null)
         return;
 
@@ -140,7 +146,7 @@ export class FarmerCharacter extends BaseCharacter {
     }
   }
 
-  async find_target(monType?: MonsterKey) {
+  find_target(monType?: MonsterKey, noTarget: boolean = true) {
     let cpos = Vector.fromEntity(character);
     let target = get_targeted_monster();
     if (target !== null)
@@ -153,7 +159,7 @@ export class FarmerCharacter extends BaseCharacter {
       let new_target = null;
       if (entity.mtype !== monType)
         continue;
-      if (!entity.target)
+      if (noTarget == false || !entity.target)
         new_target = entity;
       else if (parent.entities[entity.target]?.ctype === "merchant") {
         // Override any future checks. SAVE THE MERCHANT!
