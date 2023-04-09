@@ -1,8 +1,9 @@
-import { ClassKey, IPosition, ItemInfo, ItemKey, MerchantsApiResponse, MonsterKey, TradeSlotType } from "typed-adventureland";
+import AL, { Entity, ItemName, Mage, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
+import { Character, IPosition, ItemData } from "alclient";
 import { Mover } from "./Mover";
 import { FarmerGoal, LocalChacterInfo } from "./Types";
 import { CharacterMessager } from "./CharacterMessager";
-import { callAPI, getItemQuantity, smartUseHpOrMp } from "./Utils/Functions";
+import { callAPI, getItemQuantity, sleep, smartUseHpOrMp } from "./Utils/Functions";
 import { Bank } from "./Bank";
 import { MerchantTaskController } from "./MerchantTasks";
 import { CheckCompound } from "./Tasks/CompoundItems";
@@ -13,8 +14,8 @@ import Location from "./Utils/Location";
 import { isIPosition } from "./TypeChecks";
 
 export class BaseCharacter {
-  original: Character;
-  class: ClassKey;
+  ch: Character;
+  class: string;
   name: string;
   CM: CharacterMessager;
   working: boolean = false;
@@ -26,7 +27,7 @@ export class BaseCharacter {
   respawnTask: NodeJS.Timer | null = null;
 
   constructor(ch: Character) {
-    this.original = ch;
+    this.ch = ch;
     this.class = ch.ctype;
     this.name = ch.name;
     this.CM = new CharacterMessager(this);
@@ -35,16 +36,16 @@ export class BaseCharacter {
   }
 
   get Position(): Location {
-    return Location.fromEntity(character);
+    return Location.fromEntity(this.ch);
   }
 
   startTasks() {
     if (this.potionUseTask === null)
       this.potionUseTask = setInterval(smartUseHpOrMp, 250);
     if (this.lootTask === null)
-      this.lootTask = setInterval(loot, 250);
+      this.lootTask = setInterval(() => {}, 250);
     if (this.respawnTask === null)
-      this.respawnTask = setInterval(autoRespawn, 15_000);
+      this.respawnTask = setInterval(() => { this.respawn() }, 15_000);
   }
 
   async startRun() {
@@ -68,12 +69,13 @@ export class BaseCharacter {
    * @param name The name of the item.
    * @returns An array of item info and positions for each instance of the item in your inventory.
    */
-  getItem(name: string): {item: ItemInfo, pos: number}[] {
-    var items: {item: ItemInfo, pos: number}[] = [];
-    for (let i = 0; i < character.isize; i++) {
-    if (character.items[i] && character.items[i].name==name)
-      items.push({item: character.items[i], pos: i});
-    }
+  getItem(name: string): {item: ItemData, pos: number}[] {
+    var items: {item: ItemData, pos: number}[] = [];
+    for (let i = 0; i < this.ch.isize; i++) {
+      let item = this.ch.items[i];
+      if (item && item.name==name)
+        items.push({item: item, pos: i});
+      }
     return items;
   }
 
@@ -83,9 +85,9 @@ export class BaseCharacter {
    * @returns The promise returned by Mover.move().
    */
   move(dest: IPosition | string) {
-    if (isIPosition(dest) && can_move_to(dest.x, dest.y))
-      return move(dest.x, dest.y);
-    return Mover.move(dest);
+    if (isIPosition(dest) && AL.Pathfinder.canWalkPath(this.ch, dest))
+      return this.ch.move(dest.x, dest.y);
+    return this.ch.smartMove(<IPosition>dest); // Not actually an IPosition but there is no alias for all the possible string movements.
   }
 
   oneAtATime(func: () => Promise<void>) {
@@ -93,10 +95,16 @@ export class BaseCharacter {
     this.working = true;
     func().finally(() => {this.working = false});
   }
+
+  respawn() {
+    if (this.ch.rip) {
+      this.ch.respawn();
+    }
+  }
 }
 
 export class MerchantCharacter extends BaseCharacter {
-  static itemsToTake: ItemKey[] = [
+  static itemsToTake: ItemName[] = [
     "beewings", "crabclaw", "gslime", "gem0", "seashell", "stinger", "hpbelt",
     "ringsj", "hpamulet", "wcap", "wshoes", "intscroll"
   ];
@@ -105,9 +113,11 @@ export class MerchantCharacter extends BaseCharacter {
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
   taskController: MerchantTaskController;
+  ch: Merchant;
 
-  constructor(ch: Character) {
+  constructor(ch: Merchant) {
     super(ch);
+    this.ch = ch;
     this.taskController = new MerchantTaskController(this);
     this.taskController.run();
     this.updateCharacterInfo();
@@ -141,10 +151,10 @@ export class MerchantCharacter extends BaseCharacter {
   open_close_stand() {
     if (this.taskController.running) return;
 
-    if (is_moving(character) && character.standed) {
-      close_stand();
-    } else if (!is_moving(character) && !character.standed) {
-      open_stand();
+    if (this.ch.moving && this.ch.stand) {
+      this.ch.closeMerchantStand();
+    } else if (!this.ch.moving && !this.ch.stand) {
+      this.ch.openMerchantStand();
     }
   }
 
@@ -152,8 +162,8 @@ export class MerchantCharacter extends BaseCharacter {
     let keep = ["hpot0", "mpot0", "stand0"]
     let pos: number[] = [];
     let sellPos: [number, number][] = [];
-    for (let i in character.items) {
-      let item = character.items[i];
+    for (let i in this.ch.items) {
+      let item = this.ch.items[i];
       if (item && !keep.includes(item.name)) {
         let quantity = item.q ?? 1;
         let data = Items[item.name];
@@ -178,7 +188,7 @@ export class MerchantCharacter extends BaseCharacter {
       await this.move("market");
       for (let pos of sellPos) {
         try {
-          await sell(pos[0], pos[1]);
+          await this.ch.sell(pos[0], pos[1]);
         } catch {
           console.error("Item not present.");
         }
@@ -187,8 +197,8 @@ export class MerchantCharacter extends BaseCharacter {
 
     await this.bank.storeItems(pos);
 
-    if (character.gold > 2_000_000) {
-      await this.bank.depositGold(character.gold - 2_000_000);
+    if (this.ch.gold > 2_000_000) {
+      await this.bank.depositGold(this.ch.gold - 2_000_000);
     }
   }
 
@@ -196,23 +206,23 @@ export class MerchantCharacter extends BaseCharacter {
     this.taskController.enqueueTask(new ReplenishFarmersTask(this), 600);
   }
 
-  async buy(item: ItemKey, amount: number): Promise<number> {
+  async buy(item: ItemName, amount: number): Promise<number> {
     if (amount === 0) return -1;
     let i = Items[item];
     if (i === undefined || !i.vendor?.buy) return -1;
     let neededGold = amount * i.price;
-    if (neededGold > character.gold) {
-      if (this.bank.gold >= neededGold - character.gold)
-        await this.bank.withdrawGold(neededGold - character.gold);
+    if (neededGold > this.ch.gold) {
+      if (this.bank.gold >= neededGold - this.ch.gold)
+        await this.bank.withdrawGold(neededGold - this.ch.gold);
       else
         return -1;
     }
     await this.move(i.vendor.buyLocation);
-    let data = await buy_with_gold(item, amount);
-    return data.num;
+    let data = await this.ch.buy(item, amount);
+    return data;
   }
 
-  async bulk_buy(items: [item: ItemKey, amount: number][], allowBank: boolean = false): Promise<number[]> {
+  async bulk_buy(items: [item: ItemName, amount: number][], allowBank: boolean = false): Promise<number[]> {
     let totalGold = 0;
     let nums: number[] = [];
     for (let index in items) {
@@ -225,7 +235,7 @@ export class MerchantCharacter extends BaseCharacter {
         if (b !== undefined) {
           let results = await b.getItem(amount);
           results.forEach((pos) => { 
-            let item = character.items[pos];
+            let item = <ItemData>this.ch.items[pos];
             amount -= item.q || 1;
             items[index][1] -= item.q || 1;
             if (nums.indexOf(pos) === -1)
@@ -236,9 +246,9 @@ export class MerchantCharacter extends BaseCharacter {
       totalGold += amount * i.price;
     }
 
-    if (totalGold > character.gold) {
-      if (this.bank.gold >= totalGold - character.gold)
-        await this.bank.withdrawGold(totalGold - character.gold);
+    if (totalGold > this.ch.gold) {
+      if (this.bank.gold >= totalGold - this.ch.gold)
+        await this.bank.withdrawGold(totalGold - this.ch.gold);
       else
         return [];
     }
@@ -250,24 +260,24 @@ export class MerchantCharacter extends BaseCharacter {
       }
       let i = Items[item];
       if (i.vendor) await this.move(i.vendor.buyLocation);
-      let data = await buy_with_gold(item, amount);
-      if (nums.indexOf(data.num) === -1)
-        nums.push(data.num);
+      let data = await this.ch.buy(item, amount);
+      if (nums.indexOf(data) === -1)
+        nums.push(data);
     }
     return nums;
   }
 
-  async tradeBuy(items: {item: ItemKey, level?: number, amount: number}[], allow_cross_server: boolean = false) {
-    let data: MerchantsApiResponse[] = await callAPI("pull_merchants");
-    let chars = data[0].chars;
-    let merchantOrders: {[merchant: string]: {location: Location, buy: {slot: TradeSlotType, quantity: number}[]}} = {};
+  async tradeBuy(items: {item: ItemName, level?: number, amount: number}[], allow_cross_server: boolean = false) {
+    let data: PullMerchantsCharData[] = await AL.Game.getMerchants()
+    let chars = data;
+    let merchantOrders: {[merchant: string]: {location: Location, buy: {slot: TradeSlotType, rid: string, quantity: number}[]}} = {};
     let results = [];
     items.forEach(_ => results.push(false));
     let totalGold = 0;
     for (let merch of chars) {
-      if (allow_cross_server === false && merch.server !== `${server.region} ${server.id}`) continue;
+      if (allow_cross_server === false && merch.server !== `${this.ch.serverData.region} ${this.ch.serverData.name}`) continue;
 
-      let buyOrders: {slot: TradeSlotType, quantity: number}[] = [];
+      let buyOrders: {slot: TradeSlotType, rid: string, quantity: number}[] = [];
       for (let i = 0; i < items.length; i++) {
         let item = items[i];
         let data = Items[item.item];
@@ -279,7 +289,7 @@ export class MerchantCharacter extends BaseCharacter {
           if (item.level !== undefined && item.level !== trade.level) continue;
           if (trade.q && trade.q < item.amount) continue;
           if (trade.price > data.trade.buyMax) continue;
-          buyOrders.push({slot: <TradeSlotType>slot, quantity: item.amount});
+          buyOrders.push({slot: <TradeSlotType>slot, rid: trade.rid, quantity: item.amount});
           totalGold += trade.price * item.amount;
         }
       }
@@ -289,35 +299,35 @@ export class MerchantCharacter extends BaseCharacter {
       }
     }
 
-    if (character.gold < totalGold) {
+    if (this.ch.gold < totalGold) {
       if (this.bank.gold < totalGold) {
         return;
       }
-      await this.bank.withdrawGold(totalGold - character.gold);
+      await this.bank.withdrawGold(totalGold - this.ch.gold);
     }
 
     for (let mname in merchantOrders) {
       let order = merchantOrders[mname];
       await this.move(order.location.asPosition());
-      let merchant = get_player(mname);
+      let merchant = this.getPlayer(mname);
       if (!merchant) continue;
       
       for (let buyOrder of order.buy) {
-        await trade_buy(merchant, buyOrder.slot, buyOrder.quantity);
+        await this.ch.buyFromMerchant(merchant.id, buyOrder.slot, buyOrder.rid, buyOrder.quantity);
       }
     }
   }
 
-  async addFarmerGoal(item: ItemKey, quantity: number) {
+  async addFarmerGoal(item: ItemName, quantity: number) {
     if (!this.leader) return false;
-    let mobs: [name: MonsterKey, rate: number][] = [];
-    for (let mname in G.drops.monsters) {
-      let drops = G.drops.monsters[<MonsterKey>mname];
+    let mobs: [name: MonsterName, rate: number][] = [];
+    for (let mname in AL.Game.G.drops.monsters) {
+      let drops = AL.Game.G.drops.monsters[<MonsterName>mname];
       if (!drops) continue;
       for (let drop of drops) {
         let [rate, iname] = drop;
         if (iname === item) {
-          mobs.push([<MonsterKey>mname, rate]);
+          mobs.push([<MonsterName>mname, rate]);
         }
       }
     }
@@ -368,41 +378,46 @@ export class MerchantCharacter extends BaseCharacter {
       }
       if (char.party === null) {
         invite = true;
-      } else if (char.party !== character.name) {
+      } else if (char.party !== this.ch.name) {
         invite = true;
         await this.CM.requestLeaveParty(char.name);
       }
 
       if (invite) {
-        send_party_invite(name);
+        this.ch.sendPartyInvite(name);
         this.CM.requestPartyAccept(name);
       }
     }
   }
 
   inspectNearbyMerchants() {
-    for (var name in parent.entities) {
-      let char = parent.entities[name];
-      if (!char.player || char.ctype != "merchant") continue;
+    let merchants = this.ch.getPlayers({ctype: "merchant"});
+    for (var i in merchants) {
+      let char = merchants[i];
+      if (!char || char.ctype != "merchant") continue;
       for (var ename in char.slots) {
         if (!ename.startsWith("trade")) continue;
         let item = char.slots[<TradeSlotType>ename];
-        if (item && item.giveaway && !Object.values(<Record<string, string>>item.registry).includes(character.name)) {
-          join_giveaway(name, <TradeSlotType>ename, item.rid);
+        if (item && item.giveaway && !Object.values(<Record<string, string>>item.registry).includes(this.ch.name)) {
+          this.ch.joinGiveaway(<TradeSlotType>ename, char.id, item.rid);
         }
       }
     }
   }
-}
 
-function autoRespawn() {
-  if (character.rip) {
-    respawn();
+  getEntity(id: string): Entity | Player | null {
+    let entities = this.ch.getEntities();
+    for (let e of entities) {
+      if (e.id === id) return e;
+    }
+    return null;
   }
-}
 
-export function get_position(char: LocalChacterInfo | string): IPosition {
-  if (typeof char != "string")
-    char = char.name;
-  return get(`${char}_pos`);
+  getPlayer(id: string): Player | null {
+    let entities = this.ch.getPlayers({});
+    for (let e of entities) {
+      if (e.id === id) return e;
+    }
+    return null;
+  }
 }

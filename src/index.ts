@@ -3,9 +3,15 @@
 // If you don't know how to code, don't worry, It's easy.
 // Just set attack_mode to true and ENGAGE!
 
+import AL from "alclient";
 import { savePosition } from "./Utils/Functions";
 import { MerchantCharacter } from "./Character";
 import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter";
+
+async function run() {
+  await Promise.all([AL.Game.loginJSONFile("./credentials.json"), AL.Game.getGData()]);
+  await AL.Pathfinder.prepare(AL.Game.G);
+}
 
 let globalAny = <any>globalThis;
 var char: MerchantCharacter | PriestCharacter | FarmerCharacter | null = null;

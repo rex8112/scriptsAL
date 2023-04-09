@@ -1,4 +1,4 @@
-import { IPosition, PositionReal } from "typed-adventureland";
+import { IPosition, PositionReal } from "alclient";
 import { FarmerCharacter } from "./FarmerCharacter";
 
 export function isSmartMoveToDestination(destination: any): destination is SmartMoveToDestination {

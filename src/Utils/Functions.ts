@@ -169,6 +169,10 @@ export function callAPI<K extends keyof ApiCalls = keyof ApiCalls>(call: K): Pro
   return p;
 }
 
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => { setTimeout(resolve, ms) });
+}
+
 function min(arg0: number, arg1: number): number {
     if (arg0 < arg1) 
         return arg0
