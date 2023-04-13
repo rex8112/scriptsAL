@@ -1,4 +1,4 @@
-import { GCraft, GItem, ItemKey, MapKey, MonsterKey } from "typed-adventureland";
+import AL, { GItem, ItemName, MapName, MonsterName } from "alclient";
 import { MoverDestination } from "./Mover";
 
 export interface UpgradeInstructions {
@@ -46,49 +46,49 @@ export interface TradeInstructions {
 }
 
 export interface MapDropRate {
-  map: MapKey;
+  map: MapName;
   rate: number;
 }
 
 export interface MonsterDropRate {
-  monster: MonsterKey;
+  monster: MonsterName;
   rate: number;
 }
 
 export interface Item {
-  name: ItemKey;
+  name: ItemName;
   meta: GItem;
   price: number;
   upgrade?: UpgradeInstructions;
   compound?: CompoundInstructions;
   vendor?: VendorInstructions;
   trade?: TradeInstructions;
-  crafting?: GCraft;
+  crafting?: true;
 }
 
-export function getMapDrops(item: ItemKey): MapDropRate[] {
+export function getMapDrops(item: ItemName): MapDropRate[] {
   let drops: MapDropRate[] = [];
-  for (let mname in G.drops.maps) {
-    let map = G.drops.maps[<MapKey>mname];
+  for (let mname in AL.Game.G.drops.maps) {
+    let map = AL.Game.G.drops.maps[<MapName>mname];
     if (map === undefined) continue;
 
     for (let drop of map) {
       let name = drop[1];
-      if (name === item) drops.push({map: <MapKey>mname, rate: drop[0]});
+      if (name === item) drops.push({map: <MapName>mname, rate: drop[0]});
     }
   }
   return drops;
 }
 
-export function getMonsterDrops(item: ItemKey): MonsterDropRate[] {
+export function getMonsterDrops(item: ItemName): MonsterDropRate[] {
   let drops: MonsterDropRate[] = [];
-  for (let mname in G.drops.monsters) {
-    let monster = G.drops.monsters[<MonsterKey>mname];
+  for (let mname in AL.Game.G.drops.monsters) {
+    let monster = AL.Game.G.drops.monsters[<MonsterName>mname];
     if (monster === undefined) continue;
 
     for (let drop of monster) {
       let name = drop[1];
-      if (name === item) drops.push({monster: <MonsterKey>mname, rate: drop[0]});
+      if (name === item) drops.push({monster: <MonsterName>mname, rate: drop[0]});
     }
   }
   return drops;
@@ -133,40 +133,40 @@ export var Items: {[name: string]: Item} = {
   // Equipment
   helmet: {
     name: "helmet",
-    meta: G.items["helmet"],
-    price: G.items["helmet"].g,
+    meta: AL.Game.G.items["helmet"],
+    price: AL.Game.G.items["helmet"].g,
     upgrade: GabrialVendorUpgradeInstructions,
     vendor: GabrialVendorInstructions
   },
 
   shoes: {
     name: "shoes",
-    meta: G.items["shoes"],
-    price: G.items["shoes"].g,
+    meta: AL.Game.G.items["shoes"],
+    price: AL.Game.G.items["shoes"].g,
     upgrade: GabrialVendorUpgradeInstructions,
     vendor: GabrialVendorInstructions
   },
 
   gloves: {
     name: "gloves",
-    meta: G.items["gloves"],
-    price: G.items["gloves"].g,
+    meta: AL.Game.G.items["gloves"],
+    price: AL.Game.G.items["gloves"].g,
     upgrade: GabrialVendorUpgradeInstructions,
     vendor: GabrialVendorInstructions
   },
 
   pants: {
     name: "pants",
-    meta: G.items["pants"],
-    price: G.items["pants"].g,
+    meta: AL.Game.G.items["pants"],
+    price: AL.Game.G.items["pants"].g,
     upgrade: GabrialVendorUpgradeInstructions,
     vendor: GabrialVendorInstructions
   },
 
   coat: {
     name: "coat",
-    meta: G.items["coat"],
-    price: G.items["coat"].g,
+    meta: AL.Game.G.items["coat"],
+    price: AL.Game.G.items["coat"].g,
     upgrade: GabrialVendorUpgradeInstructions,
     vendor: GabrialVendorInstructions
   },
@@ -174,98 +174,98 @@ export var Items: {[name: string]: Item} = {
   // Wanderer's Set
   wcap: {
     name: "wcap",
-    meta: G.items["wcap"],
-    price: G.items["wcap"].g,
-    crafting: G.craft["wcap"],
+    meta: AL.Game.G.items["wcap"],
+    price: AL.Game.G.items["wcap"].g,
+    crafting: true,
     upgrade: WanderersUpgradeInstructions
   },
 
   wattire: {
     name: "wattire",
-    meta: G.items["wattire"],
-    price: G.items["wattire"].g,
-    crafting: G.craft["wattire"],
+    meta: AL.Game.G.items["wattire"],
+    price: AL.Game.G.items["wattire"].g,
+    crafting: true,
     upgrade: WanderersUpgradeInstructions
   },
 
   wbreeches: {
     name: "wbreeches",
-    meta: G.items["wbreeches"],
-    price: G.items["wbreeches"].g,
-    crafting: G.craft["wbreeches"],
+    meta: AL.Game.G.items["wbreeches"],
+    price: AL.Game.G.items["wbreeches"].g,
+    crafting: true,
     upgrade: WanderersUpgradeInstructions
   },
 
   wgloves: {
     name: "wgloves",
-    meta: G.items["wgloves"],
-    price: G.items["wgloves"].g,
-    crafting: G.craft["wgloves"],
+    meta: AL.Game.G.items["wgloves"],
+    price: AL.Game.G.items["wgloves"].g,
+    crafting: true,
     upgrade: WanderersUpgradeInstructions
   },
 
   wshoes: {
     name: "wshoes",
-    meta: G.items["wshoes"],
-    price: G.items["wshoes"].g,
-    crafting: G.craft["wshoes"],
+    meta: AL.Game.G.items["wshoes"],
+    price: AL.Game.G.items["wshoes"].g,
+    crafting: true,
     upgrade: WanderersUpgradeInstructions
   },
 
   // Rugged Set
   helmet1: {
     name: "helmet1",
-    meta: G.items["helmet1"],
-    price: G.items["helmet1"].g,
-    crafting: G.craft["helmet1"],
+    meta: AL.Game.G.items["helmet1"],
+    price: AL.Game.G.items["helmet1"].g,
+    crafting: true,
     upgrade: RuggedUpgradeInstructions
   },
 
   coat1: {
     name: "coat1",
-    meta: G.items["coat1"],
-    price: G.items["coat1"].g,
-    crafting: G.craft["coat1"],
+    meta: AL.Game.G.items["coat1"],
+    price: AL.Game.G.items["coat1"].g,
+    crafting: true,
     upgrade: RuggedUpgradeInstructions
   },
 
   pants1: {
     name: "pants1",
-    meta: G.items["pants1"],
-    price: G.items["pants1"].g,
-    crafting: G.craft["pants1"],
+    meta: AL.Game.G.items["pants1"],
+    price: AL.Game.G.items["pants1"].g,
+    crafting: true,
     upgrade: RuggedUpgradeInstructions
   },
 
   gloves1: {
     name: "gloves1",
-    meta: G.items["gloves1"],
-    price: G.items["gloves1"].g,
-    crafting: G.craft["gloves1"],
+    meta: AL.Game.G.items["gloves1"],
+    price: AL.Game.G.items["gloves1"].g,
+    crafting: true,
     upgrade: RuggedUpgradeInstructions
   },
 
   shoes1: {
     name: "shoes1",
-    meta: G.items["shoes1"],
-    price: G.items["shoes1"].g,
-    crafting: G.craft["shoes1"],
+    meta: AL.Game.G.items["shoes1"],
+    price: AL.Game.G.items["shoes1"].g,
+    crafting: true,
     upgrade: RuggedUpgradeInstructions
   },
 
   // Weapons
   staff: {
     name: "staff",
-    meta: G.items["staff"],
-    price: G.items["staff"].g,
+    meta: AL.Game.G.items["staff"],
+    price: AL.Game.G.items["staff"].g,
     upgrade: GabrialVendorUpgradeInstructions,
     vendor: GabrialVendorInstructions
   },
 
   stinger: {
     name: "stinger",
-    meta: G.items["stinger"],
-    price: G.items["stinger"].g,
+    meta: AL.Game.G.items["stinger"],
+    price: AL.Game.G.items["stinger"].g,
     upgrade: {
       keep: 3,
       max: 8,
@@ -282,8 +282,8 @@ export var Items: {[name: string]: Item} = {
 
   mushroomstaff: {
     name: "mushroomstaff",
-    meta: G.items["mushroomstaff"],
-    price: G.items["mushroomstaff"].g,
+    meta: AL.Game.G.items["mushroomstaff"],
+    price: AL.Game.G.items["mushroomstaff"].g,
     upgrade: {
       keep: 2,
       max: 8,
@@ -300,8 +300,8 @@ export var Items: {[name: string]: Item} = {
   
   cclaw: {
     name: "cclaw",
-    meta: G.items["cclaw"],
-    price: G.items["cclaw"].g,
+    meta: AL.Game.G.items["cclaw"],
+    price: AL.Game.G.items["cclaw"].g,
     vendor: {
       buyLocation: "market",
       buy: false,
@@ -313,35 +313,35 @@ export var Items: {[name: string]: Item} = {
   // Fire Weapons
   firestaff: {
     name: "firestaff",
-    meta: G.items["firestaff"],
-    price: G.items["firestaff"].g,
+    meta: AL.Game.G.items["firestaff"],
+    price: AL.Game.G.items["firestaff"].g,
     upgrade: {
       keep: 3,
       max: 8,
       primling: 20,
       primordial: 20
     },
-    crafting: G.craft["firestaff"]
+    crafting: true,
   },
 
   fireblade: {
     name: "fireblade",
-    meta: G.items["fireblade"],
-    price: G.items["fireblade"].g,
+    meta: AL.Game.G.items["fireblade"],
+    price: AL.Game.G.items["fireblade"].g,
     upgrade: {
       keep: 3,
       max: 8,
       primling: 20,
       primordial: 20
     },
-    crafting: G.craft["fireblade"]
+    crafting: true,
   },
 
   // Accessories
   ringsj: {
     name: "ringsj",
-    meta: G.items["ringsj"],
-    price: G.items["ringsj"].g,
+    meta: AL.Game.G.items["ringsj"],
+    price: AL.Game.G.items["ringsj"].g,
     compound: {
       keep: 3,
       max: 4,
@@ -359,8 +359,8 @@ export var Items: {[name: string]: Item} = {
 
   hpamulet: {
     name: "hpamulet",
-    meta: G.items["hpamulet"],
-    price: G.items["hpamulet"].g,
+    meta: AL.Game.G.items["hpamulet"],
+    price: AL.Game.G.items["hpamulet"].g,
     compound: {
       keep: 3,
       max: 4,
@@ -378,8 +378,8 @@ export var Items: {[name: string]: Item} = {
 
   hpbelt: {
     name: "hpbelt",
-    meta: G.items["hpbelt"],
-    price: G.items["hpbelt"].g,
+    meta: AL.Game.G.items["hpbelt"],
+    price: AL.Game.G.items["hpbelt"].g,
     compound: {
       keep: 3,
       max: 4,
@@ -397,8 +397,8 @@ export var Items: {[name: string]: Item} = {
 
   intamulet: {
     name: "intamulet",
-    meta: G.items["intamulet"],
-    price: G.items["intamulet"].g,
+    meta: AL.Game.G.items["intamulet"],
+    price: AL.Game.G.items["intamulet"].g,
     compound: {
       keep: 2,
       max: 4,
@@ -410,8 +410,8 @@ export var Items: {[name: string]: Item} = {
 
   stramulet: {
     name: "stramulet",
-    meta: G.items["stramulet"],
-    price: G.items["stramulet"].g,
+    meta: AL.Game.G.items["stramulet"],
+    price: AL.Game.G.items["stramulet"].g,
     compound: {
       keep: 1,
       max: 4,
@@ -423,8 +423,8 @@ export var Items: {[name: string]: Item} = {
 
   dexamulet: {
     name: "dexamulet",
-    meta: G.items["dexamulet"],
-    price: G.items["dexamulet"].g,
+    meta: AL.Game.G.items["dexamulet"],
+    price: AL.Game.G.items["dexamulet"].g,
     compound: {
       keep: 1,
       max: 4,
@@ -436,8 +436,8 @@ export var Items: {[name: string]: Item} = {
 
   dexring: {
     name: "dexring",
-    meta: G.items["dexring"],
-    price: G.items["dexring"].g,
+    meta: AL.Game.G.items["dexring"],
+    price: AL.Game.G.items["dexring"].g,
     compound: {
       keep: 1,
       max: 4,
@@ -455,8 +455,8 @@ export var Items: {[name: string]: Item} = {
 
   orbg: {
     name: "orbg",
-    meta: G.items["orbg"],
-    price: G.items["orbg"].g,
+    meta: AL.Game.G.items["orbg"],
+    price: AL.Game.G.items["orbg"].g,
     compound: {
       keep: 3,
       max: 3,
@@ -469,51 +469,51 @@ export var Items: {[name: string]: Item} = {
   // Consumables
   hpot0: {
     name: "hpot0",
-    meta: G.items["hpot0"],
-    price: G.items["hpot0"].g,
+    meta: AL.Game.G.items["hpot0"],
+    price: AL.Game.G.items["hpot0"].g,
     vendor: LucasVendorInstructions
   },
 
   mpot0: {
     name: "mpot0",
-    meta: G.items["mpot0"],
-    price: G.items["mpot0"].g,
+    meta: AL.Game.G.items["mpot0"],
+    price: AL.Game.G.items["mpot0"].g,
     vendor: LucasVendorInstructions
   },
 
   scroll0: {
     name: "scroll0",
-    meta: G.items["scroll0"],
-    price: G.items["scroll0"].g,
+    meta: AL.Game.G.items["scroll0"],
+    price: AL.Game.G.items["scroll0"].g,
     vendor: LucasVendorInstructions
   },
 
   scroll1: {
     name: "scroll1",
-    meta: G.items["scroll1"],
-    price: G.items["scroll1"].g,
+    meta: AL.Game.G.items["scroll1"],
+    price: AL.Game.G.items["scroll1"].g,
     vendor: LucasVendorInstructions
   },
 
   cscroll0: {
     name: "cscroll0",
-    meta: G.items["cscroll0"],
-    price: G.items["cscroll0"].g,
+    meta: AL.Game.G.items["cscroll0"],
+    price: AL.Game.G.items["cscroll0"].g,
     vendor: LucasVendorInstructions
   },
 
   cscroll1: {
     name: "cscroll1",
-    meta: G.items["cscroll1"],
-    price: G.items["cscroll1"].g,
+    meta: AL.Game.G.items["cscroll1"],
+    price: AL.Game.G.items["cscroll1"].g,
     vendor: LucasVendorInstructions
   },
 
   // Materials
   spores: {
     name: "spores",
-    meta: G.items["spores"],
-    price: G.items["spores"].g,
+    meta: AL.Game.G.items["spores"],
+    price: AL.Game.G.items["spores"].g,
     vendor: {
       sell: true,
       buy: false,
@@ -524,8 +524,8 @@ export var Items: {[name: string]: Item} = {
 
   beewings: {
     name: "beewings",
-    meta: G.items["beewings"],
-    price: G.items["beewings"].g,
+    meta: AL.Game.G.items["beewings"],
+    price: AL.Game.G.items["beewings"].g,
     vendor: {
       sell: true,
       buy: false,
@@ -536,8 +536,8 @@ export var Items: {[name: string]: Item} = {
 
   seashell: {
     name: "seashell",
-    meta: G.items["seashell"],
-    price: G.items["seashell"].g,
+    meta: AL.Game.G.items["seashell"],
+    price: AL.Game.G.items["seashell"].g,
     vendor: {
       sell: true,
       buy: false,
@@ -548,8 +548,8 @@ export var Items: {[name: string]: Item} = {
 
   cscale: {
     name: "cscale",
-    meta: G.items["cscale"],
-    price: G.items["cscale"].g,
+    meta: AL.Game.G.items["cscale"],
+    price: AL.Game.G.items["cscale"].g,
     vendor: {
       sell: true,
       buy: false,
@@ -560,8 +560,8 @@ export var Items: {[name: string]: Item} = {
 
   essenceoffire: {
     name: "essenceoffire",
-    meta: G.items["essenceoffire"],
-    price: G.items["essenceoffire"].g,
+    meta: AL.Game.G.items["essenceoffire"],
+    price: AL.Game.G.items["essenceoffire"].g,
     trade: {
       buyMax: 88_000,
       sellPrice: 0
