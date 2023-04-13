@@ -1,6 +1,10 @@
 import { EventKey, ItemInfo, ItemKey, MapKey, MonsterKey } from "typed-adventureland";
 import { CharacterEntitySlotsInfos } from "typed-adventureland/dist/src/entities/character-entity";
+import { BaseCharacter, MerchantCharacter } from "./Character";
+import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter";
 import Location from "./Utils/Location";
+
+export type CustomCharacter = BaseCharacter | MerchantCharacter | FarmerCharacter | PriestCharacter
 
 export interface CharacterData {
   gold: number;
