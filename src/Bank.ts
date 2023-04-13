@@ -1,73 +1,69 @@
-import { BankPackTypeItemsOnly, CharacterBankInfos, ItemInfo, ItemKey, MapKey } from "typed-adventureland";
+import AL, { BankInfo, BankPackName, ItemData, ItemName, MapName } from "alclient";
 import { BaseCharacter } from "./Character";
-import { getFreeSlot } from "./Utils/Functions";
+import { getFreeSlot, sleep } from "./Utils/Functions";
 
-export type BankPosition = [pack: BankPack, pos: number, item: ItemData];
+export type BankPosition = [pack: BankPack, pos: number, item: BankItemData];
 
-export interface ItemData extends ItemInfo {
+export interface BankItemData extends ItemData {
   bank_item: BankItem;
 }
 
 export class Bank {
-  char: BaseCharacter;
-  bank: CharacterBankInfos = <CharacterBankInfos>{};
   gold: number = 0;
   items: {[name: string]: BankItem} = {};
   packs: {[name: string]: BankPack} = {};
-  constructor(ch: BaseCharacter) {
-    this.char = ch;
-  }
+  constructor() {}
 
   /**
    * Go the the map that contains the bank pack.
    * @param pack The pack to go to.
    */
-  async moveToPack(pack: BankPack | BankPackTypeItemsOnly | "gold") {
-    let map: MapKey;
+  async moveToPack(char: BaseCharacter, pack: BankPack | BankPackName | "gold") {
+    let map: MapName;
     try {
-      if (pack === "gold") {
+      map = "bank";
+      /* if (pack === "gold") {
         map = "bank";
       } else if (pack instanceof BankPack) {
         map = bank_packs[pack.name][0];
       } else {
         map = bank_packs[pack][0];
-      }
+      } */
     } catch (error) {
       console.error("Error in moveToPack: ", pack);
       throw(error);
     }
-    while (character.map !== map) {
-      console.log(character.map, map);
-      await this.char.move(map);
+    while (char.ch.map !== map) {
+      console.log(char.ch.map, map);
+      await char.move(map);
       console.log("Done Moving");
       await sleep(500);
     }
   }
 
-  async updateInfo() {
+  async updateInfo(char: BaseCharacter) {
     console.log("Updating Information");
-    await this.moveToPack("items0");
+    await this.moveToPack(char, "items0");
     await sleep(500);
-    let bankInfo = <CharacterBankInfos>character.bank;
+    let bankInfo = char.ch.bank;
     if (bankInfo === null) {
-      await this.updateInfo();
+      await this.updateInfo(char);
       return;
     }
-    this.bank = bankInfo;
     this.gold = bankInfo?.gold || 0;
     console.log("Building Items");
-    this.buildItems();
-    game_log("Bank Initialization Finished", "green");
+    this.buildItems(bankInfo);
+    console.log("Bank Initialization Finished");
   }
 
-  buildItems() {
+  buildItems(data: BankInfo) {
     this.items = {};
-    for (let pname in this.bank) {
-      let pack = new BankPack(this, <BankPackTypeItemsOnly>pname);
+    for (let pname in data) {
+      let pack = new BankPack(this, <BankPackName>pname);
       this.packs[pack.name] = pack;
-      let pack_data = this.bank[<BankPackTypeItemsOnly>pname];
+      let pack_data = data[<BankPackName>pname];
       for (let i in pack_data) {
-        let item = pack_data[i];
+        let item = pack_data[Number(i)];
         if (item !== null) {
           this._addItemPosition(pack, Number(i), item);
         }
@@ -75,30 +71,30 @@ export class Bank {
     }
   }
 
-  _addItemPosition(pack: BankPack, pos: number, item: ItemInfo) {
+  _addItemPosition(pack: BankPack, pos: number, item: ItemData) {
     if (this.items[item.name] === undefined)
       this.items[item.name] = new BankItem(this, item.name);
 
     let itemTemp: any = { ...item };
     itemTemp.bank_item = this.items[item.name];
 
-    this.items[item.name].addPosition([pack, pos, <ItemData>itemTemp]);
+    this.items[item.name].addPosition([pack, pos, <BankItemData>itemTemp]);
   }
 
-  async depositGold(amount: number): Promise<void> {
+  async depositGold(char: BaseCharacter, amount: number): Promise<void> {
     let amt = amount;
-    if (amt > character.gold) {
-      amt = character.gold;
+    if (amt > char.ch.gold) {
+      amt = char.ch.gold;
     } else if (amt < 1) {
       amt = 1;
     }
 
-    await this.moveToPack("gold");
-    bank_deposit(amt);
+    await this.moveToPack(char, "gold");
+    await char.ch.depositGold(amt);
     this.gold += amt;
   }
 
-  async withdrawGold(amount: number): Promise<number> {
+  async withdrawGold(char: BaseCharacter, amount: number): Promise<number> {
     let amt = amount;
     if (amt > this.gold) {
       amt = this.gold;
@@ -106,13 +102,13 @@ export class Bank {
       amt = 1;
     }
 
-    await this.moveToPack("gold");
-    bank_withdraw(amt);
+    await this.moveToPack(char, "gold");
+    await char.ch.withdrawGold(amt);
     this.gold -= amt;
     return amt;
   }
 
-  findItems(filter: ((i: ItemInfo) => boolean)): BankPosition[] {
+  findItems(filter: ((i: ItemData) => boolean)): BankPosition[] {
     let positions: BankPosition[] = [];
     for (let name in this.items) {
       let item = this.items[name];
@@ -127,26 +123,26 @@ export class Bank {
    * @param quantity The amount of items to fetch, leave blank for entire stack.
    * @returns The slot of the retrieved item and the quantity retrieved.
    */
-  async _getItemFromPosition(pos: BankPosition, quantity: number = 0): Promise<[number | null, number]> {
+  async _getItemFromPosition(char: BaseCharacter, pos: BankPosition, quantity: number = 0): Promise<[number | null, number]> {
     if (pos[1] > 41 || pos[1] < 0) {
       console.log(`${pos[1]} is outside of allowed range!`);
       return [null, 0];
     }
-    await this.moveToPack(pos[0]);
-    let num = getFreeSlot(character.items, character.isize);
+    await this.moveToPack(char, pos[0]);
+    let num = getFreeSlot(char.ch.items, char.ch.isize);
     if (num === null || num >= 41)
       return [null, 0];
     if (quantity > 0 && quantity < (pos[2].q || 1)) {
-      await bank_retrieve(pos[0].name, pos[1], 41);
-      await split(41, quantity); // As long as the inventory doesn't change this split should put in the free slot found above.
-      await bank_store(41, pos[0].name, pos[1]);
+      await char.ch.withdrawItem(pos[0].name, pos[1], 41);
+      await char.ch.splitItem(41, quantity); // As long as the inventory doesn't change this split should put in the free slot found above.
+      await char.ch.depositItem(41, pos[0].name, pos[1]);
 
       if (pos[2].q)
         pos[2].q -= quantity;
 
       return [num, quantity];
     }
-    await bank_retrieve(pos[0].name, pos[1], num);
+    await char.ch.withdrawItem(pos[0].name, pos[1], num);
     this.items[pos[2].name].removePosition(pos);
 
     return [num, pos[2].q || 1];
@@ -158,12 +154,12 @@ export class Bank {
    * @param quantity The total quantity of items to grab. 0 disables.
    * @returns Returns list of positions.
    */
-  async getItemFromPositions(positions: BankPosition[], quantity: number = 0): Promise<number[]> {
+  async getItemFromPositions(char: BaseCharacter, positions: BankPosition[], quantity: number = 0): Promise<number[]> {
     let grabbed = [];
     let qGrabbed = 0;
     for (var i in positions) {
       let pos = positions[i];
-      let [num, q] = await this._getItemFromPosition(pos, quantity);
+      let [num, q] = await this._getItemFromPosition(char, pos, quantity);
       if (num !== null) {
         qGrabbed += q;
         grabbed.push(num);
@@ -178,10 +174,10 @@ export class Bank {
    * use `Bank.items["itemname"].getItem(quantity, filter?)`.
    * @param filter The filter that determines if an item should be grabbed.
    */
-  async getItems(filter: ((i: ItemInfo) => boolean)) {
+  async getItems(char: BaseCharacter, filter: ((i: ItemData) => boolean)) {
     let positions = this.findItems(filter);
     if (positions.length > 0) {
-      await this.getItemFromPositions(positions);
+      await this.getItemFromPositions(char, positions);
     }
   }
 
@@ -190,14 +186,14 @@ export class Bank {
    * @param ipos An array of inventory positions to store.
    * @returns The amount of stacks stored. Should be the same as ipos.length if everything worked.
    */
-  async storeItems(ipos: number[]): Promise<number> {
+  async storeItems(char: BaseCharacter, ipos: number[]): Promise<number> {
     ipos.sort((a, b) => a - b);
     let stored = 0;
     let length = ipos.length;
     for (let i = 0; i < length; i++) {
       let orgPos = ipos[i];
-      let item = character.items[orgPos];
-      if (item === undefined) {
+      let item = char.ch.items[orgPos];
+      if (item === null) {
         console.log("Can't store undefined: ", orgPos);
         continue;
       }
@@ -205,26 +201,26 @@ export class Bank {
       // If the item is stackable AND this item already has a BankItem associated with it.
       if (item.q !== undefined && this.items[item.name]) {
         let cont = false;
-        let meta = G.items[item.name];
+        let meta = AL.Game.G.items[item.name];
         let spots = this.items[item.name].findItem();
         let left = item.q;
         for (let i in spots) {
           let spot = spots[i];
           if (<number>meta.s > item.q) {
             // By pulling this item into the character inventory, then using swap, we can stack the items.
-            let [newPos, q] = await this._getItemFromPosition(spot);
+            let [newPos, q] = await this._getItemFromPosition(char, spot);
             if (newPos !== null) {
-              let newItem = character.items[newPos];
+              let newItem = <ItemData>char.ch.items[newPos]; // This slot was just filled, it isn't null.
               let room = <number>meta.s - <number>newItem.q;
               if (room >= left) {
-                await swap(orgPos, newPos);
-                item = character.items[orgPos];
+                await char.ch.swapItems(orgPos, newPos);
+                item = <ItemData>char.ch.items[orgPos]; // This can't be null since it couldn't all fit in new spot.
                 break;
               } else {
-                let freeSlot = getFreeSlot(character.items, character.isize);
+                let freeSlot = getFreeSlot(char.ch.items, char.ch.isize);
                 if (freeSlot) {
-                  await split(orgPos, room);
-                  await swap(newPos, freeSlot);
+                  await char.ch.splitItem(orgPos, room);
+                  await char.ch.swapItems(newPos, freeSlot);
                 }
                 length = ipos.push(newPos);
                 left -= room;
@@ -239,9 +235,9 @@ export class Bank {
         let pack = this.packs[name];
         let free = pack.getFreeSlot();
         if (free !== null) {
-          await this.moveToPack(pack);
+          await this.moveToPack(char, pack);
           this._addItemPosition(pack, free, item);
-          await bank_store(orgPos, pack.name, free);
+          await char.ch.depositItem(orgPos, pack.name, free);
           stored++;
           break;
         }
@@ -251,7 +247,7 @@ export class Bank {
   }
 
   noInfo() {
-    if (Object.keys(<object>this.bank).length > 0) 
+    if (Object.keys(<object>this.packs).length > 0) 
       return false;
     return true;
   }
@@ -259,23 +255,23 @@ export class Bank {
 
 class BankPack {
   bank: Bank;
-  name: BankPackTypeItemsOnly;
-  items: (ItemData | null)[] = [];
+  name: BankPackName;
+  items: (BankItemData | null)[] = [];
   size: number = 42;
-  constructor(bank: Bank, name: BankPackTypeItemsOnly) {
+  constructor(bank: Bank, name: BankPackName) {
     this.bank = bank;
     this.name = name;
 
     for (var i = 0; i < 42; i++) this.items.push(null);
   }
 
-  _addItem(item: ItemData, pos: number): ItemData | null {
+  _addItem(item: BankItemData, pos: number): BankItemData | null {
     let current = this.items[pos];
     this.items[pos] = item;
     return current;
   }
 
-  _removeItem(pos: number): ItemData | null {
+  _removeItem(pos: number): BankItemData | null {
     let current = this.items[pos];
     this.items[pos] = null;
     return current;
@@ -310,10 +306,10 @@ class BankPack {
 
 class BankItem {
   bank: Bank;
-  name: ItemKey;
+  name: ItemName;
   positions: BankPosition[] = [];
 
-  constructor(bank: Bank, name: ItemKey) {
+  constructor(bank: Bank, name: ItemName) {
     this.bank = bank;
     this.name = name;
   }
@@ -323,7 +319,7 @@ class BankItem {
    * @param filter Filters the results
    * @returns An array of BankPosition of the item.
    */
-  findItem(filter: ((i: ItemInfo) => boolean) | null = null): BankPosition[] {
+  findItem(filter: ((i: ItemData) => boolean) | null = null): BankPosition[] {
     let positions: BankPosition[] = [];
 
     for (let i in this.positions) {
@@ -348,15 +344,15 @@ class BankItem {
    * @param filter A filter of the items to grab. Defaults to null.
    * @returns Returns new positions.
    */
-  async getItem(quantity: number = 1, filter: ((i: ItemInfo) => boolean) | null = null): Promise<number[]> {
-    if (character.map !== "bank")
-      await this.bank.char.move("bank");
+  async getItem(char: BaseCharacter, quantity: number = 1, filter: ((i: ItemData) => boolean) | null = null): Promise<number[]> {
+    if (char.ch.map !== "bank")
+      await char.move("bank");
     let positions = this.findItem(filter);
-    let grabbed = await this.bank.getItemFromPositions(positions, quantity);
+    let grabbed = await this.bank.getItemFromPositions(char, positions, quantity);
     return grabbed;
   }
 
-  getTotal(filter: ((i: ItemInfo) => boolean) | null = null): number {
+  getTotal(filter: ((i: ItemData) => boolean) | null = null): number {
     let total = 0;
     let positions = this.findItem(filter);
     
@@ -368,7 +364,7 @@ class BankItem {
     return total;
   }
 
-  hasItem(item: ItemInfo): boolean {
+  hasItem(item: ItemData): boolean {
     if (item.name !== this.name) return false;
     for (let i in this.positions) {
       let pos = this.positions[i];
