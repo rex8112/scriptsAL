@@ -1,8 +1,8 @@
 import { ItemInfo } from "typed-adventureland";
-import { BankPosition } from "../Bank";
-import { MerchantCharacter } from "../Character";
-import { Items } from "../Items";
-import { BackgroundTask, Task, MerchantTaskController } from "../MerchantTasks";
+import { BankPosition } from "../Bank.js";
+import { MerchantCharacter } from "../Character.js";
+import { Items } from "../Items.js";
+import { BackgroundTask, Task, MerchantTaskController } from "../MerchantTasks.js";
 
 export class CheckCompound extends BackgroundTask {
   name = "compound_check";

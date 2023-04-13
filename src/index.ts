@@ -1,6 +1,6 @@
 import AL from "alclient";
-import { Bank } from "./Bank";
-import CharacterController from "./CharacterController";
+import { Bank } from "./Bank.js";
+import CharacterController from "./CharacterController.js";
 
 async function run() {
   await Promise.all([AL.Game.loginJSONFile("./credentials.json"), AL.Game.getGData()]);

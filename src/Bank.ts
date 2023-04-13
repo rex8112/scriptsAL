@@ -1,6 +1,6 @@
 import AL, { BankInfo, BankPackName, ItemData, ItemName, MapName } from "alclient";
-import { BaseCharacter } from "./Character";
-import { getFreeSlot, sleep } from "./Utils/Functions";
+import { BaseCharacter } from "./Character.js";
+import { getFreeSlot, sleep } from "./Utils/Functions.js";
 
 export type BankPosition = [pack: BankPack, pos: number, item: BankItemData];
 

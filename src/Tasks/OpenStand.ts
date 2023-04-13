@@ -1,5 +1,5 @@
-import { MerchantCharacter } from "../Character";
-import { DefaultTask } from "../MerchantTasks";
+import { MerchantCharacter } from "../Character.js";
+import { DefaultTask } from "../MerchantTasks.js";
 
 export class OpenStand extends DefaultTask {
   name = "open_stand";

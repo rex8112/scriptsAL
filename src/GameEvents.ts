@@ -1,7 +1,7 @@
 import { IPosition, SMonsterEventLiveWithCoordinates } from "typed-adventureland";
-import { FarmerCharacter } from "./FarmerCharacter";
-import Location from "./Utils/Location";
-import { Vector } from "./Utils/Vector";
+import { FarmerCharacter } from "./FarmerCharacter.js";
+import Location from "./Utils/Location.js";
+import { Vector } from "./Utils/Vector.js";
 
 let GameEvent: {[event: string]: {[mode: string]: (ch: FarmerCharacter) => Promise<void>}} = {
   "wabbit": {

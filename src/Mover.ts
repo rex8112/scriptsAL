@@ -1,7 +1,7 @@
 import { IPosition, MapKey, MonsterKey, NpcKey } from "typed-adventureland";
-import { isIPosition, isPositionReal } from "./TypeChecks";
-import Rectangle from "./Utils/Rectangle";
-import { Vector } from "./Utils/Vector";
+import { isIPosition, isPositionReal } from "./TypeChecks.js";
+import Rectangle from "./Utils/Rectangle.js";
+import { Vector } from "./Utils/Vector.js";
 
 interface PathActionMove {
   action: "Move";

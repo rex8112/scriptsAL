@@ -1,10 +1,10 @@
 import { Entity, EventKey, LootEvent, MapKey, MonsterKey } from "typed-adventureland";
-import { EventData, EventLocation, FarmerGoal } from "./Types";
-import { Vector } from "./Utils/Vector";
-import Location from "./Utils/Location";
-import { BaseCharacter, get_position } from "./Character";
-import { canUseSkill } from "./Utils/Functions";
-import GameEvent from "./GameEvents";
+import { EventData, EventLocation, FarmerGoal } from "./Types.js";
+import { Vector } from "./Utils/Vector.js";
+import Location from "./Utils/Location.js";
+import { BaseCharacter } from "./Character.js";
+import { canUseSkill } from "./Utils/Functions.js";
+import GameEvent from "./GameEvents.js";
 
 
 export class FarmerCharacter extends BaseCharacter {
@@ -20,8 +20,8 @@ export class FarmerCharacter extends BaseCharacter {
 
   constructor(ch: Character) {
     super(ch);
-    ch.on("loot", (data) => { this.onLoot(data); });
-    game.on("event", (data) => { this.onEvent(data); });
+    //ch.on("loot", (data) => { this.onLoot(data); });
+    //game.on("event", (data) => { this.onEvent(data); });
   }
 
   startTasks(): void {

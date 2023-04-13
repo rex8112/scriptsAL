@@ -1,4 +1,4 @@
-import { MerchantCharacter } from "./Character";
+import { MerchantCharacter } from "./Character.js";
 
 export abstract class Task {
   abstract name: string;

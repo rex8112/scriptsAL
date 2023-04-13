@@ -1,5 +1,5 @@
 import { Entity, MapKey } from "typed-adventureland";
-import { Vector } from "./Vector";
+import { Vector } from "./Vector.js";
 
 export default class Location {
   vector: Vector;

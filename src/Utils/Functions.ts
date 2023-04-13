@@ -1,8 +1,8 @@
 import { ApiCalls, IPosition, ItemInfo, SkillKey } from "typed-adventureland"
-import { BaseCharacter } from "../Character"
-import { LocalChacterInfo } from "../Types"
-import Location from "./Location"
-import { Vector } from "./Vector"
+import { BaseCharacter } from "../Character.js"
+import { LocalChacterInfo } from "../Types.js"
+import Location from "./Location.js"
+import { Vector } from "./Vector.js"
 
 var lastPotion = new Date()
 export function smartUseHpOrMp() {

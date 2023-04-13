@@ -1,5 +1,5 @@
 import { IPosition, PositionReal } from "alclient";
-import { FarmerCharacter } from "./FarmerCharacter";
+import { FarmerCharacter } from "./FarmerCharacter.js";
 
 export function isSmartMoveToDestination(destination: any): destination is SmartMoveToDestination {
   if (typeof destination == "string") return true;

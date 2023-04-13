@@ -1,7 +1,7 @@
 import AL from "alclient";
-import { MerchantCharacter } from "./Character";
-import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter";
-import { CustomCharacter } from "./Types";
+import { MerchantCharacter } from "./Character.js";
+import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter.js";
+import { CustomCharacter } from "./Types.js";
 
 export default class CharacterController {
   characters: {[name: string]: CustomCharacter} = {};

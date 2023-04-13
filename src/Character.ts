@@ -1,25 +1,24 @@
 import AL, { Entity, ItemName, Mage, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
 import { Character, IPosition, ItemData } from "alclient";
-import { Mover } from "./Mover";
-import { FarmerGoal, LocalChacterInfo } from "./Types";
-import { CharacterMessager } from "./CharacterMessager";
-import { callAPI, getItemQuantity, sleep, smartUseHpOrMp } from "./Utils/Functions";
-import { Bank } from "./Bank";
-import { MerchantTaskController } from "./MerchantTasks";
-import { CheckCompound } from "./Tasks/CompoundItems";
-import { CheckUpgrade } from "./Tasks/UpgradeItems";
-import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers";
-import { Items } from "./Items";
-import Location from "./Utils/Location";
-import { isIPosition } from "./TypeChecks";
+import { Mover } from "./Mover.js";
+import { FarmerGoal, LocalChacterInfo } from "./Types.js";
+import { CharacterMessager } from "./CharacterMessager.js";
+import { callAPI, getItemQuantity, sleep, smartUseHpOrMp } from "./Utils/Functions.js";
+import { Bank } from "./Bank.js";
+import { MerchantTaskController } from "./MerchantTasks.js";
+import { CheckCompound } from "./Tasks/CompoundItems.js";
+import { CheckUpgrade } from "./Tasks/UpgradeItems.js";
+import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers.js";
+import { Items } from "./Items.js";
+import Location from "./Utils/Location.js";
+import { isIPosition } from "./TypeChecks.js";
 
 export class BaseCharacter {
   ch: Character;
   class: string;
   name: string;
-  CM: CharacterMessager;
+  //CM: CharacterMessager;
   working: boolean = false;
-  bank: Bank;
   leader: string | null = null;
 
   potionUseTask: NodeJS.Timer | null = null;
@@ -30,8 +29,7 @@ export class BaseCharacter {
     this.ch = ch;
     this.class = ch.ctype;
     this.name = ch.name;
-    this.CM = new CharacterMessager(this);
-    this.bank = new Bank(this);
+    //this.CM = new CharacterMessager(this);
     
   }
 
@@ -126,8 +124,8 @@ export class MerchantCharacter extends BaseCharacter {
   startTasks() {
     super.startTasks();
 
-    if (this.updateTask === null)
-      this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
+    //if (this.updateTask === null)
+    //  this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
     if (this.standTask === null)
       this.standTask = setInterval(() => { this.open_close_stand() }, 150);
     if (this.inspectMerchantTask === null)
@@ -209,8 +207,9 @@ export class MerchantCharacter extends BaseCharacter {
   async buy(item: ItemName, amount: number): Promise<number> {
     if (amount === 0) return -1;
     let i = Items[item];
+    let d = AL.Game.G.items[item];
     if (i === undefined || !i.vendor?.buy) return -1;
-    let neededGold = amount * i.price;
+    let neededGold = amount * d.g;
     if (neededGold > this.ch.gold) {
       if (this.bank.gold >= neededGold - this.ch.gold)
         await this.bank.withdrawGold(neededGold - this.ch.gold);
@@ -228,6 +227,7 @@ export class MerchantCharacter extends BaseCharacter {
     for (let index in items) {
       let [item, amount] = items[index];
       let i = Items[item];
+      let d = AL.Game.G.items[item];
       if (i === undefined || !i.vendor?.buy) return [];
 
       if (allowBank && amount > 0) {
@@ -243,7 +243,7 @@ export class MerchantCharacter extends BaseCharacter {
           });
         }
       }
-      totalGold += amount * i.price;
+      totalGold += amount * d.g;
     }
 
     if (totalGold > this.ch.gold) {
@@ -362,7 +362,8 @@ export class MerchantCharacter extends BaseCharacter {
   }
 
   async updateCharacterInfo() {
-    var cData = await this.CM.gatherAllCharacterInfo();
+    return;
+    //var cData = await this.CM.gatherAllCharacterInfo();
     this.characterInfo = cData;
     if (this.leader !== null && !Object.keys(cData).includes(this.leader)) {
       this.leader = null;

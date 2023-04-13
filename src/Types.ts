@@ -1,8 +1,8 @@
 import { EventKey, ItemInfo, ItemKey, MapKey, MonsterKey } from "typed-adventureland";
 import { CharacterEntitySlotsInfos } from "typed-adventureland/dist/src/entities/character-entity";
-import { BaseCharacter, MerchantCharacter } from "./Character";
-import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter";
-import Location from "./Utils/Location";
+import { BaseCharacter, MerchantCharacter } from "./Character.js";
+import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter.js";
+import Location from "./Utils/Location.js";
 
 export type CustomCharacter = BaseCharacter | MerchantCharacter | FarmerCharacter | PriestCharacter
 

@@ -1,8 +1,8 @@
-import { BaseCharacter, MerchantCharacter } from "./Character";
-import { FarmerCharacter } from "./FarmerCharacter";
-import { CMRequests, Request } from "./CMRequests";
-import { CMRequestAddFarmerGoal, CMRequestAddFarmerGoalReply, CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMRequestSetLeader, CMRequestSetLeaderReply, CMTask, FarmerGoal, LocalChacterInfo } from "./Types";
-import { isFarmerCharacter } from "./TypeChecks";
+import { BaseCharacter, MerchantCharacter } from "./Character.js";
+import { FarmerCharacter } from "./FarmerCharacter.js";
+import { CMRequests, Request } from "./CMRequests.js";
+import { CMRequestAddFarmerGoal, CMRequestAddFarmerGoalReply, CMRequestGold, CMRequestGoldReply, CMRequestInfo, CMRequestInfoReply, CMRequestItems, CMRequestItemsReply, CMRequestLeaveParty, CMRequestLeavePartyReply, CMRequestPartyAccept, CMRequestPartyAcceptReply, CMRequestSetLeader, CMRequestSetLeaderReply, CMTask, FarmerGoal, LocalChacterInfo } from "./Types.js";
+import { isFarmerCharacter } from "./TypeChecks.js";
 
 export class CharacterMessager {
   cmr: CMRequests;

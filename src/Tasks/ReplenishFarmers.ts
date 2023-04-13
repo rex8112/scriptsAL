@@ -1,7 +1,7 @@
-import { MerchantCharacter } from "../Character";
-import { Task } from "../MerchantTasks";
-import { LocalChacterInfo } from "../Types";
-import { getFreeSlots, getItemPosition, getItemQuantity, moveToCharacter } from "../Utils/Functions";
+import { MerchantCharacter } from "../Character.js";
+import { Task } from "../MerchantTasks.js";
+import { LocalChacterInfo } from "../Types.js";
+import { getFreeSlots, getItemPosition, getItemQuantity, moveToCharacter } from "../Utils/Functions.js";
 
 export class ReplenishFarmersTask extends Task {
   name = "replenish_farmers";

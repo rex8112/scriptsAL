@@ -1,9 +1,9 @@
 import { ItemInfo } from "typed-adventureland";
-import { BankPosition } from "../Bank";
-import { MerchantCharacter } from "../Character";
-import { Items } from "../Items";
-import { BackgroundTask, Task, MerchantTaskController } from "../MerchantTasks";
-import { getFreeSlots, getItemPosition } from "../Utils/Functions";
+import { BankPosition } from "../Bank.js";
+import { MerchantCharacter } from "../Character.js";
+import { Items } from "../Items.js";
+import { BackgroundTask, Task, MerchantTaskController } from "../MerchantTasks.js";
+import { getFreeSlots, getItemPosition } from "../Utils/Functions.js";
 
 export class CheckUpgrade extends BackgroundTask {
   name = "upgrade_check";
