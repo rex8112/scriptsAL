@@ -38,5 +38,8 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Editor Files
+.vscode/
+
 # Scary Files
 credentials.json
