@@ -10,7 +10,8 @@ async function run() {
   let cc = new CharacterController();
   console.log("Deploying Characters");
   await cc.deploy();
-  let merchant = cc.characters["Dezchant"];
+  let merchant = cc.Merchant;
+  if (!merchant) return;
   console.log("Updating Bank Info");
   await bank.updateInfo(merchant);
 }

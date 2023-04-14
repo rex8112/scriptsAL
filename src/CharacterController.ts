@@ -13,6 +13,15 @@ export default class CharacterController {
     }
   }
 
+  get Merchant(): MerchantCharacter | null {
+    for (let name in this.characters) {
+      let c = this.characters[name];
+      if (c.ch.ctype === "merchant") return <MerchantCharacter>c;
+    }
+
+    return null;
+  }
+
   async deploy() {
     for (let name of this.selectedCharacters) {
       if (AL.Game.characters[name]?.type === "merchant") {
