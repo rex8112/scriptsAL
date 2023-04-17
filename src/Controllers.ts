@@ -129,13 +129,13 @@ export class CharacterController {
         this.characters[name] = new MerchantCharacter(this.game, c);
       } else if (AL.Game.characters[name]?.type === "mage") {
         let c = await AL.Game.startMage(name, "US", "I");
-        this.characters[name] = new FarmerCharacter(c);
+        this.characters[name] = new FarmerCharacter(this.game, c);
       } else if (AL.Game.characters[name]?.type === "ranger") {
         let c = await AL.Game.startRanger(name, "US", "I");
-        this.characters[name] = new FarmerCharacter(c);
+        this.characters[name] = new FarmerCharacter(this.game, c);
       } else if (AL.Game.characters[name]?.type === "priest") {
         let c = await AL.Game.startPriest(name, "US", "I");
-        this.characters[name] = new PriestCharacter(c);
+        this.characters[name] = new PriestCharacter(this.game, c);
       } else {
         throw new Error(`Class type not supported for character: ${name}`);
       }

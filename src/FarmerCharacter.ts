@@ -1,10 +1,11 @@
-import { Entity, EventKey, LootEvent, MapKey, MonsterKey } from "typed-adventureland";
 import { EventData, EventLocation, FarmerGoal } from "./Types.js";
 import { Vector } from "./Utils/Vector.js";
 import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
-import { canUseSkill } from "./Utils/Functions.js";
+import { canUseSkill, get_position, sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
+import { Character } from "alclient";
+import { GameController } from "./Controllers.js";
 
 
 export class FarmerCharacter extends BaseCharacter {
@@ -18,8 +19,8 @@ export class FarmerCharacter extends BaseCharacter {
 
   supportInterval?: NodeJS.Timer;
 
-  constructor(ch: Character) {
-    super(ch);
+  constructor(gc: GameController, ch: Character) {
+    super(gc, ch);
     //ch.on("loot", (data) => { this.onLoot(data); });
     //game.on("event", (data) => { this.onEvent(data); });
   }

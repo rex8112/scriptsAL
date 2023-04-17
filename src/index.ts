@@ -6,7 +6,6 @@ async function run() {
   await Promise.all([AL.Game.loginJSONFile("./credentials.json"), AL.Game.getGData()]);
   await AL.Pathfinder.prepare(AL.Game.G);
 
-  let bank = new Bank();
   let gc = new GameController();
   console.log("Setting Up GameController");
   await gc.setup();
