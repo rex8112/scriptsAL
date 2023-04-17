@@ -12,8 +12,10 @@ import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers.js";
 import { Items } from "./Items.js";
 import Location from "./Utils/Location.js";
 import { isIPosition } from "./TypeChecks.js";
+import { GameController } from "./Controllers.js";
 
 export class BaseCharacter {
+  game: GameController;
   ch: Character;
   class: string;
   name: string;
@@ -25,7 +27,8 @@ export class BaseCharacter {
   lootTask: NodeJS.Timer | null = null;
   respawnTask: NodeJS.Timer | null = null;
 
-  constructor(ch: Character) {
+  constructor(gc: GameController, ch: Character) {
+    this.game = gc;
     this.ch = ch;
     this.class = ch.ctype;
     this.name = ch.name;
@@ -62,6 +65,22 @@ export class BaseCharacter {
     this.leader = leader;
   }
 
+  getEntity(id: string): Entity | Player | null {
+    let entities = this.ch.getEntities();
+    for (let e of entities) {
+      if (e.id === id) return e;
+    }
+    return null;
+  }
+
+  getPlayer(id: string): Player | null {
+    let entities = this.ch.getPlayers({});
+    for (let e of entities) {
+      if (e.id === id) return e;
+    }
+    return null;
+  }
+
   /**
    * Get an array of all instances of an item in your inventory.
    * @param name The name of the item.
@@ -75,6 +94,18 @@ export class BaseCharacter {
         items.push({item: item, pos: i});
       }
     return items;
+  }
+
+  storeItems(ipos: number[]) {
+    return this.game.bank.storeItems(this, ipos);
+  }
+
+  withdrawGold(amount: number) {
+    return this.game.bank.withdrawGold(this, amount);
+  }
+
+  depositGold(amount: number) {
+    return this.game.bank.depositGold(this, amount);
   }
 
   /**
@@ -113,12 +144,11 @@ export class MerchantCharacter extends BaseCharacter {
   taskController: MerchantTaskController;
   ch: Merchant;
 
-  constructor(ch: Merchant) {
-    super(ch);
+  constructor(gc: GameController, ch: Merchant) {
+    super(gc, ch);
     this.ch = ch;
     this.taskController = new MerchantTaskController(this);
     this.taskController.run();
-    this.updateCharacterInfo();
   }
 
   startTasks() {
@@ -126,78 +156,9 @@ export class MerchantCharacter extends BaseCharacter {
 
     //if (this.updateTask === null)
     //  this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
-    if (this.standTask === null)
-      this.standTask = setInterval(() => { this.open_close_stand() }, 150);
-    if (this.inspectMerchantTask === null)
-      this.inspectMerchantTask = setInterval(() => { this.inspectNearbyMerchants() }, 5_000);
     
     this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
     this.taskController.enqueueTask(new CheckCompound(this, this.taskController));
-  }
-
-  async run() {
-    if (this.bank.noInfo()) {
-      await this.bank.updateInfo();
-      await sleep(1_000);
-    }
-
-    //if (this.getCompoundableItemsFromBank().length > 0) this.taskController.enqueueTask(new CompoundItems(this), 100);
-
-    if (this.needFarmerRun()) this.taskController.enqueueTask(new ReplenishFarmersTask(this), 500);
-  }
-
-  open_close_stand() {
-    if (this.taskController.running) return;
-
-    if (this.ch.moving && this.ch.stand) {
-      this.ch.closeMerchantStand();
-    } else if (!this.ch.moving && !this.ch.stand) {
-      this.ch.openMerchantStand();
-    }
-  }
-
-  async cleanInventory() {
-    let keep = ["hpot0", "mpot0", "stand0"]
-    let pos: number[] = [];
-    let sellPos: [number, number][] = [];
-    for (let i in this.ch.items) {
-      let item = this.ch.items[i];
-      if (item && !keep.includes(item.name)) {
-        let quantity = item.q ?? 1;
-        let data = Items[item.name];
-        if (data && data.vendor?.sell === true) {
-          let total = this.bank.items[item.name]?.getTotal() ?? 0 + quantity;
-          if (total >= data.vendor.keep) {
-            let sell = total - data.vendor.keep;
-            if (sell >= quantity) {
-              sellPos.push([Number(i), quantity]);
-              continue;
-            } else {
-              sellPos.push([Number(i), sell])
-            }
-          }
-        }
-        pos.push(Number(i));
-      }
-    }
-
-    console.log(sellPos);
-    if (sellPos.length > 0) {
-      await this.move("market");
-      for (let pos of sellPos) {
-        try {
-          await this.ch.sell(pos[0], pos[1]);
-        } catch {
-          console.error("Item not present.");
-        }
-      }
-    }
-
-    await this.bank.storeItems(pos);
-
-    if (this.ch.gold > 2_000_000) {
-      await this.bank.depositGold(this.ch.gold - 2_000_000);
-    }
   }
 
   async farmerRun() {
@@ -211,8 +172,8 @@ export class MerchantCharacter extends BaseCharacter {
     if (i === undefined || !i.vendor?.buy) return -1;
     let neededGold = amount * d.g;
     if (neededGold > this.ch.gold) {
-      if (this.bank.gold >= neededGold - this.ch.gold)
-        await this.bank.withdrawGold(neededGold - this.ch.gold);
+      if (this.game.bank.gold >= neededGold - this.ch.gold)
+        await this.withdrawGold(neededGold - this.ch.gold);
       else
         return -1;
     }
@@ -231,9 +192,9 @@ export class MerchantCharacter extends BaseCharacter {
       if (i === undefined || !i.vendor?.buy) return [];
 
       if (allowBank && amount > 0) {
-        let b = this.bank.items[item];
+        let b = this.game.bank.items[item];
         if (b !== undefined) {
-          let results = await b.getItem(amount);
+          let results = await b.getItem(this, amount);
           results.forEach((pos) => { 
             let item = <ItemData>this.ch.items[pos];
             amount -= item.q || 1;
@@ -247,8 +208,8 @@ export class MerchantCharacter extends BaseCharacter {
     }
 
     if (totalGold > this.ch.gold) {
-      if (this.bank.gold >= totalGold - this.ch.gold)
-        await this.bank.withdrawGold(totalGold - this.ch.gold);
+      if (this.game.bank.gold >= totalGold - this.ch.gold)
+        await this.withdrawGold(totalGold - this.ch.gold);
       else
         return [];
     }
@@ -300,10 +261,10 @@ export class MerchantCharacter extends BaseCharacter {
     }
 
     if (this.ch.gold < totalGold) {
-      if (this.bank.gold < totalGold) {
+      if (this.game.bank.gold < totalGold) {
         return;
       }
-      await this.bank.withdrawGold(totalGold - this.ch.gold);
+      await this.withdrawGold(totalGold - this.ch.gold);
     }
 
     for (let mname in merchantOrders) {
@@ -316,27 +277,6 @@ export class MerchantCharacter extends BaseCharacter {
         await this.ch.buyFromMerchant(merchant.id, buyOrder.slot, buyOrder.rid, buyOrder.quantity);
       }
     }
-  }
-
-  async addFarmerGoal(item: ItemName, quantity: number) {
-    if (!this.leader) return false;
-    let mobs: [name: MonsterName, rate: number][] = [];
-    for (let mname in AL.Game.G.drops.monsters) {
-      let drops = AL.Game.G.drops.monsters[<MonsterName>mname];
-      if (!drops) continue;
-      for (let drop of drops) {
-        let [rate, iname] = drop;
-        if (iname === item) {
-          mobs.push([<MonsterName>mname, rate]);
-        }
-      }
-    }
-    if (mobs.length <= 0) return false;
-    mobs.sort((a, b) => { return b[1] - a[1]; });
-    let chosen = mobs[0];
-    let goal: FarmerGoal = {name: chosen[0], for: {name: item, amount: quantity}, issued: Date.now()};
-    let resp = await this.CM.requestAddFarmerGoal(this.leader, goal);
-    return resp?.data ?? false;
   }
 
   needFarmerRun(): boolean {
@@ -361,36 +301,6 @@ export class MerchantCharacter extends BaseCharacter {
     return items;
   }
 
-  async updateCharacterInfo() {
-    return;
-    //var cData = await this.CM.gatherAllCharacterInfo();
-    this.characterInfo = cData;
-    if (this.leader !== null && !Object.keys(cData).includes(this.leader)) {
-      this.leader = null;
-    }
-    for (let name in cData) {
-      let char = cData[name];
-      let invite = false;
-      if (this.leader == null) {
-        this.leader = char.name;
-      }
-      if (char.leader !== this.leader) {
-        this.CM.requestSetLeader(char.name, this.leader);
-      }
-      if (char.party === null) {
-        invite = true;
-      } else if (char.party !== this.ch.name) {
-        invite = true;
-        await this.CM.requestLeaveParty(char.name);
-      }
-
-      if (invite) {
-        this.ch.sendPartyInvite(name);
-        this.CM.requestPartyAccept(name);
-      }
-    }
-  }
-
   inspectNearbyMerchants() {
     let merchants = this.ch.getPlayers({ctype: "merchant"});
     for (var i in merchants) {
@@ -404,21 +314,5 @@ export class MerchantCharacter extends BaseCharacter {
         }
       }
     }
-  }
-
-  getEntity(id: string): Entity | Player | null {
-    let entities = this.ch.getEntities();
-    for (let e of entities) {
-      if (e.id === id) return e;
-    }
-    return null;
-  }
-
-  getPlayer(id: string): Player | null {
-    let entities = this.ch.getPlayers({});
-    for (let e of entities) {
-      if (e.id === id) return e;
-    }
-    return null;
   }
 }

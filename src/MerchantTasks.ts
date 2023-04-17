@@ -105,21 +105,19 @@ export class MerchantTaskController {
 
     if (task_to_run !== undefined && this._pause == false) {
       if (this.defaultTask && this.defaultTask.isRunning()) this.defaultTask.cancel();
-      set_message(task_to_run.displayName);
+      
       this.running = true;
       console.log("Running task", task_to_run.displayName);
-      game_log(`Starting Task: ${task_to_run.displayName}`, "orange");
       try {
-        await close_stand();
+        await this.char.ch.closeMerchantStand();
         await task_to_run.run();
-        await open_stand();
+        await this.char.ch.openMerchantStand();
       } catch (error) {
         console.error(`Error in ${task_to_run.name}`, error);
-        game_log(`Error in Task: ${task_to_run.displayName}`, "red");
       }
-      game_log(`Finished Task: ${task_to_run.displayName}`, "orange");
+      console.log(`Finished Task: ${task_to_run.displayName}`);
       this.running = false;
-      set_message("Finished");
+      
       delete this.tasks[task_to_run.id];
     } else if (task_to_run === undefined && this._pause == false) {
       if (this.defaultTask && this.defaultTask.isRunning() == false) {

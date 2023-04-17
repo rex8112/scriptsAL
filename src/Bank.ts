@@ -1,6 +1,7 @@
 import AL, { BankInfo, BankPackName, ItemData, ItemName, MapName } from "alclient";
 import { BaseCharacter } from "./Character.js";
 import { getFreeSlot, sleep } from "./Utils/Functions.js";
+import { CustomCharacter } from "./Types.js";
 
 export type BankPosition = [pack: BankPack, pos: number, item: BankItemData];
 
@@ -41,7 +42,7 @@ export class Bank {
     }
   }
 
-  async updateInfo(char: BaseCharacter) {
+  async updateInfo(char: CustomCharacter) {
     console.log("Updating Information");
     await this.moveToPack(char, "items0");
     await sleep(500);
