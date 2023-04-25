@@ -108,63 +108,6 @@ export class BaseCharacter {
     return this.game.bank.depositGold(this, amount);
   }
 
-  /**
-   * A shortcut method to use Mover.move().
-   * @param dest Destination to move character.
-   * @returns The promise returned by Mover.move().
-   */
-  move(dest: IPosition | string) {
-    if (isIPosition(dest) && AL.Pathfinder.canWalkPath(this.ch, dest))
-      return this.ch.move(dest.x, dest.y);
-    return this.ch.smartMove(<IPosition>dest); // Not actually an IPosition but there is no alias for all the possible string movements.
-  }
-
-  oneAtATime(func: () => Promise<void>) {
-    if (this.working === true) return;
-    this.working = true;
-    func().finally(() => {this.working = false});
-  }
-
-  respawn() {
-    if (this.ch.rip) {
-      this.ch.respawn();
-    }
-  }
-}
-
-export class MerchantCharacter extends BaseCharacter {
-  static itemsToTake: ItemName[] = [
-    "beewings", "crabclaw", "gslime", "gem0", "seashell", "stinger", "hpbelt",
-    "ringsj", "hpamulet", "wcap", "wshoes", "intscroll"
-  ];
-  characterInfo: {[name: string]: LocalChacterInfo} = {};
-  updateTask: NodeJS.Timer | null = null;
-  standTask: NodeJS.Timer | null = null;
-  inspectMerchantTask: NodeJS.Timer | null = null;
-  taskController: MerchantTaskController;
-  ch: Merchant;
-
-  constructor(gc: GameController, ch: Merchant) {
-    super(gc, ch);
-    this.ch = ch;
-    this.taskController = new MerchantTaskController(this);
-    this.taskController.run();
-  }
-
-  startTasks() {
-    super.startTasks();
-
-    //if (this.updateTask === null)
-    //  this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
-    
-    this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
-    this.taskController.enqueueTask(new CheckCompound(this, this.taskController));
-  }
-
-  async farmerRun() {
-    this.taskController.enqueueTask(new ReplenishFarmersTask(this), 600);
-  }
-
   async buy(item: ItemName, amount: number): Promise<number> {
     if (amount === 0) return -1;
     let i = Items[item];
@@ -226,6 +169,63 @@ export class MerchantCharacter extends BaseCharacter {
         nums.push(data);
     }
     return nums;
+  }
+
+  /**
+   * A shortcut method to use Mover.move().
+   * @param dest Destination to move character.
+   * @returns The promise returned by Mover.move().
+   */
+  move(dest: IPosition | string) {
+    if (isIPosition(dest) && AL.Pathfinder.canWalkPath(this.ch, dest))
+      return this.ch.move(dest.x, dest.y);
+    return this.ch.smartMove(<IPosition>dest); // Not actually an IPosition but there is no alias for all the possible string movements.
+  }
+
+  oneAtATime(func: () => Promise<void>) {
+    if (this.working === true) return;
+    this.working = true;
+    func().finally(() => {this.working = false});
+  }
+
+  respawn() {
+    if (this.ch.rip) {
+      this.ch.respawn();
+    }
+  }
+}
+
+export class MerchantCharacter extends BaseCharacter {
+  static itemsToTake: ItemName[] = [
+    "beewings", "crabclaw", "gslime", "gem0", "seashell", "stinger", "hpbelt",
+    "ringsj", "hpamulet", "wcap", "wshoes", "intscroll"
+  ];
+  characterInfo: {[name: string]: LocalChacterInfo} = {};
+  updateTask: NodeJS.Timer | null = null;
+  standTask: NodeJS.Timer | null = null;
+  inspectMerchantTask: NodeJS.Timer | null = null;
+  taskController: MerchantTaskController;
+  ch: Merchant;
+
+  constructor(gc: GameController, ch: Merchant) {
+    super(gc, ch);
+    this.ch = ch;
+    this.taskController = new MerchantTaskController(this);
+    this.taskController.run();
+  }
+
+  startTasks() {
+    super.startTasks();
+
+    //if (this.updateTask === null)
+    //  this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
+    
+    this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
+    this.taskController.enqueueTask(new CheckCompound(this, this.taskController));
+  }
+
+  async farmerRun() {
+    this.taskController.enqueueTask(new ReplenishFarmersTask(this), 600);
   }
 
   async tradeBuy(items: {item: ItemName, level?: number, amount: number}[], allow_cross_server: boolean = false) {
