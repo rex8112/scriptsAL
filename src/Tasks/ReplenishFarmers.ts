@@ -8,13 +8,13 @@ export class ReplenishFarmersTask extends Task {
 
   displayName = "Replenish Farmers";
 
-  char: MerchantCharacter;
+  mc: MerchantCharacter;
   
   cancellable: boolean = true;
 
   constructor(char: MerchantCharacter) {
     super(char);
-    this.char = char;
+    this.mc = char;
   }
 
   initialize(id: number) {
@@ -26,18 +26,18 @@ export class ReplenishFarmersTask extends Task {
   }
 
   async getPotions(hpots: number, mpots: number): Promise<void> {
-    let bh = this.char.bank.items["hpot0"]?.getTotal() || 0;
-    let bm = this.char.bank.items["mpot0"]?.getTotal() || 0;
+    let bh = this.mc.bank.items["hpot0"]?.getTotal() || 0;
+    let bm = this.mc.bank.items["mpot0"]?.getTotal() || 0;
 
     let grabbedH = getItemQuantity("hpot0", character.items, character.isize);
     let grabbedM = getItemQuantity("mpot0", character.items, character.isize);
 
     if (bh > 0) {
-      let newPositions = await this.char.bank.items["hpot0"].getItem(hpots);
+      let newPositions = await this.mc.bank.items["hpot0"].getItem(hpots);
       newPositions.forEach((pos) => { grabbedH += character.items[pos].q || 1 })
     }
     if (bm > 0) {
-      let newPositions = await this.char.bank.items["mpot0"].getItem(mpots);
+      let newPositions = await this.mc.bank.items["mpot0"].getItem(mpots);
       newPositions.forEach((pos) => { grabbedM += character.items[pos].q || 1 })
     }
     let buyList = [];
@@ -47,7 +47,7 @@ export class ReplenishFarmersTask extends Task {
     if (grabbedM < mpots) {
       buyList.push(["mpot0", mpots - grabbedM]);
     }
-    await this.char.bulk_buy([["hpot0", hpots - grabbedH], ["mpot0", mpots - grabbedM]])
+    await this.mc.bulk_buy([["hpot0", hpots - grabbedH], ["mpot0", mpots - grabbedM]])
   }
 
   getTakableItems(char: LocalChacterInfo): [number, number][] {
@@ -61,7 +61,7 @@ export class ReplenishFarmersTask extends Task {
   }
 
   async run_task(): Promise<void> {
-    var characterInfo = await this.char.CM.gatherAllCharacterInfo();
+    var characterInfo = await this.mc.CM.gatherAllCharacterInfo();
 
     let potsNeeded: {[name: string]: [number, number]} = {};
 
@@ -79,14 +79,14 @@ export class ReplenishFarmersTask extends Task {
 
     for (var name in characterInfo) {
       var char = characterInfo[name];
-      if (name == character.name || !Object.keys(this.char.characterInfo).includes(name)) continue;
-      if (!await moveToCharacter(this.char, char.name, 200)) continue;
+      if (name == character.name || !Object.keys(this.mc.characterInfo).includes(name)) continue;
+      if (!await moveToCharacter(this.mc, char.name, 200)) continue;
       let promises = [];
       let free = getFreeSlots(character.items, character.isize).length;
       let items = this.getTakableItems(char).slice(0, free-2);
 
-      promises.push(this.char.CM.requestGold(name, char.gold));
-      promises.push(this.char.CM.requestItems(name, items));
+      promises.push(this.mc.CM.requestGold(name, char.gold));
+      promises.push(this.mc.CM.requestItems(name, items));
 
       let hpots = getItemPosition("hpot0", character.items, character.isize);
       let mpots = getItemPosition("mpot0", character.items, character.isize);
@@ -97,8 +97,8 @@ export class ReplenishFarmersTask extends Task {
 
       await Promise.all(promises);
     }
-    await this.char.updateCharacterInfo();
+    await this.mc.updateCharacterInfo();
     await sleep(500);
-    await this.char.cleanInventory();
+    await this.mc.cleanInventory();
   }
 }

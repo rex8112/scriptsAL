@@ -1,18 +1,19 @@
 import { MerchantCharacter } from "./Character.js";
+import { MerchantController } from "./Controllers.js";
 
 export abstract class Task {
   abstract name: string;
   abstract displayName: string;
   abstract cancellable: boolean;
   id: number = 0;
-  char: MerchantCharacter;
+  mc: MerchantController;
   _cancelling: boolean = false;
   _running: boolean = false;
   _priority: number = 0;
   background: boolean = false;
 
-  constructor(char: MerchantCharacter) {
-    this.char = char
+  constructor(char: MerchantController) {
+    this.mc = char
   }
 
   async run(): Promise<void> {

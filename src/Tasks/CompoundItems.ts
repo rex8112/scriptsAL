@@ -11,12 +11,12 @@ export class CheckCompound extends BackgroundTask {
 
   msinterval = 30_000;
 
-  char: MerchantCharacter;
+  mc: MerchantCharacter;
   controller: MerchantTaskController;
 
   constructor(char: MerchantCharacter, controller: MerchantTaskController) {
     super(char);
-    this.char = char;
+    this.mc = char;
     this.controller = controller;
   }
 
@@ -27,7 +27,7 @@ export class CheckCompound extends BackgroundTask {
   }
 
   findCompoundables(): [first: BankPosition, second: BankPosition, third: BankPosition][] {
-    let positions = this.char.bank.findItems(this.isCompoundable);
+    let positions = this.mc.bank.findItems(this.isCompoundable);
     let items: {[name: string]: [BankPosition, number][]} = {};
     positions.forEach((pos) => {
       let name = pos[2].name;
@@ -75,7 +75,7 @@ export class CheckCompound extends BackgroundTask {
 
     let items = this.findCompoundables();
     if (items.length > 0)
-      this.controller.enqueueTask(new CompoundItems(this.char, items), 100);
+      this.controller.enqueueTask(new CompoundItems(this.mc, items), 100);
   }
 }
 
@@ -86,12 +86,12 @@ export class CompoundItems extends Task {
 
   cancellable = true;
 
-  char: MerchantCharacter;
+  mc: MerchantCharacter;
   items: [first: BankPosition, second: BankPosition, third: BankPosition][];
 
   constructor(char: MerchantCharacter, items: [first: BankPosition, second: BankPosition, third: BankPosition][]) {
     super(char);
-    this.char = char;
+    this.mc = char;
     this.items = items;
   }
 
@@ -104,7 +104,7 @@ export class CompoundItems extends Task {
     let normalAttempts = 0;
     let highAttempts = 0;
     for (let pos of this.items) {
-      let result = await this.char.bank.getItemFromPositions(pos);
+      let result = await this.mc.bank.getItemFromPositions(pos);
       let item = character.items[result[0]];
       let data = Items[item.name];
       if (data === undefined || data.meta.grades === undefined || item.level === undefined) continue;
@@ -118,9 +118,9 @@ export class CompoundItems extends Task {
       items.push(<[number, number, number]>result);
     }
 
-    let [cscroll0, cscroll1] = await this.char.bulk_buy([["cscroll0", normalAttempts], ["cscroll1", highAttempts]], true);
+    let [cscroll0, cscroll1] = await this.mc.bulk_buy([["cscroll0", normalAttempts], ["cscroll1", highAttempts]], true);
     
-    await this.char.move("market");
+    await this.mc.move("market");
     set_message("Compounding");
     let returnItems = [];
     for (var i in items) {
@@ -142,6 +142,6 @@ export class CompoundItems extends Task {
       }
     }
     if (returnItems.length > 0)
-      await this.char.bank.storeItems(returnItems);
+      await this.mc.bank.storeItems(returnItems);
   }
 }

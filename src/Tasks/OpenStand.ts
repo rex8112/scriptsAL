@@ -7,11 +7,11 @@ export class OpenStand extends DefaultTask {
   displayName = "Open Stand";
 
   cancellable = true;
-  char: MerchantCharacter;
+  mc: MerchantCharacter;
 
   constructor(char: MerchantCharacter) {
     super(char);
-    this.char = char;
+    this.mc = char;
   }
 
   initialize(id: number) {
@@ -23,7 +23,7 @@ export class OpenStand extends DefaultTask {
   }
 
   async run_task(): Promise<void> {
-    await this.char.move("market");
+    await this.mc.move("market");
     await open_stand();
     while (this._cancelling == false) {
       await sleep(500);
