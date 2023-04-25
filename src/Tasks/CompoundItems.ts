@@ -1,8 +1,9 @@
-import { ItemInfo } from "typed-adventureland";
+import AL, { ItemData } from "alclient";
 import { BankPosition } from "../Bank.js";
 import { MerchantCharacter } from "../Character.js";
 import { Items } from "../Items.js";
 import { BackgroundTask, Task, MerchantTaskController } from "../MerchantTasks.js";
+import { MerchantController } from "../Controllers.js";
 
 export class CheckCompound extends BackgroundTask {
   name = "compound_check";
@@ -11,16 +12,16 @@ export class CheckCompound extends BackgroundTask {
 
   msinterval = 30_000;
 
-  mc: MerchantCharacter;
+  mc: MerchantController;
   controller: MerchantTaskController;
 
-  constructor(char: MerchantCharacter, controller: MerchantTaskController) {
-    super(char);
-    this.mc = char;
+  constructor(mc: MerchantController, controller: MerchantTaskController) {
+    super(mc);
+    this.mc = mc;
     this.controller = controller;
   }
 
-  isCompoundable(item: ItemInfo): boolean {
+  isCompoundable(item: ItemData): boolean {
     let i = Items[item.name];
     if (i && i.compound) return true;
     return false;
@@ -86,12 +87,12 @@ export class CompoundItems extends Task {
 
   cancellable = true;
 
-  mc: MerchantCharacter;
+  mc: MerchantController;
   items: [first: BankPosition, second: BankPosition, third: BankPosition][];
 
-  constructor(char: MerchantCharacter, items: [first: BankPosition, second: BankPosition, third: BankPosition][]) {
-    super(char);
-    this.mc = char;
+  constructor(mc: MerchantController, items: [first: BankPosition, second: BankPosition, third: BankPosition][]) {
+    super(mc);
+    this.mc = mc;
     this.items = items;
   }
 
@@ -104,44 +105,48 @@ export class CompoundItems extends Task {
     let normalAttempts = 0;
     let highAttempts = 0;
     for (let pos of this.items) {
-      let result = await this.mc.bank.getItemFromPositions(pos);
-      let item = character.items[result[0]];
+      let result = await this.mc.bank.getItemFromPositions(this.mc.merchant, pos);
+      let item = this.mc.merchant.ch.items[result[0]];
+      if (!item) continue;
       let data = Items[item.name];
-      if (data === undefined || data.meta.grades === undefined || item.level === undefined) continue;
+      let meta = AL.Game.G.items[item.name];
+      if (data === undefined || meta.grades === undefined || item.level === undefined) continue;
 
-      if (item.level < data.meta.grades[0]) {
+      if (item.level < meta.grades[0]) {
         normalAttempts++;
-      } else if (item.level < data.meta.grades[1]) {
+      } else if (item.level < meta.grades[1]) {
         highAttempts++;
       } else continue;
 
       items.push(<[number, number, number]>result);
     }
 
-    let [cscroll0, cscroll1] = await this.mc.bulk_buy([["cscroll0", normalAttempts], ["cscroll1", highAttempts]], true);
+    let [cscroll0, cscroll1] = await this.mc.merchant.bulk_buy([["cscroll0", normalAttempts], ["cscroll1", highAttempts]], true);
     
-    await this.mc.move("market");
-    set_message("Compounding");
+    await this.mc.merchant.move("market");
+    console.log("Compounding");
     let returnItems = [];
     for (var i in items) {
       let pos = items[i];
-      let item = character.items[pos[0]];
+      let item = this.mc.merchant.ch.items[pos[0]];
+      if (!item) continue;
       let data = Items[item.name];
-      if (data === undefined || data.meta.grades === undefined || item.level === undefined) continue;
+      let meta = AL.Game.G.items[item.name];
+      if (data === undefined || meta.grades === undefined || item.level === undefined) continue;
 
       let scrollPos;
-      if (item.level < data.meta.grades[0])
+      if (item.level < meta.grades[0])
         scrollPos = cscroll0;
-      else if (item.level < data.meta.grades[1])
+      else if (item.level < meta.grades[1])
         scrollPos = cscroll1;
       else continue;
 
-      let result = await compound(pos[0], pos[1], pos[2], scrollPos);
-      if (result.success) {
+      let result = await this.mc.merchant.ch.compound(pos[0], pos[1], pos[2], scrollPos);
+      if (result) {
         returnItems.push(Math.min(...pos));
       }
     }
     if (returnItems.length > 0)
-      await this.mc.bank.storeItems(returnItems);
+      await this.mc.merchant.storeItems(returnItems);
   }
 }
