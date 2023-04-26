@@ -14,6 +14,10 @@ export class GameController {
     this.characterController = new CharacterController(this);
   }
 
+  get characters() {
+    return this.characterController.characters;
+  }
+
   async setup() {
     await this.characterController.deploy();
     let merch = this.characterController.Merchant;
@@ -97,6 +101,26 @@ export class MerchantController {
     let chosen = mobs[0];
     let goal: FarmerGoal = {name: chosen[0], for: {name: item, amount: quantity}, issued: Date.now()};
     // TODO: Finish Implementation
+  }
+}
+
+export class FarmerController {
+  game: GameController;
+  goals: FarmerGoal[] = [];
+
+  constructor(gc: GameController) {
+    this.game = gc;
+  }
+
+  getFarmers() {
+    let farmers = [];
+    for (let name in this.game.characters) {
+      let char = this.game.characters[name];
+      if (char.ch.ctype !== "merchant") {
+        farmers.push(char);
+      }
+    }
+    return farmers;
   }
 }
 
