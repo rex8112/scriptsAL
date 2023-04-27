@@ -9,9 +9,11 @@ export class GameController {
   loaded: boolean = false;
   bank: Bank;
   characterController: CharacterController;
+  farmerController: FarmerController;
   constructor() {
     this.bank = new Bank();
     this.characterController = new CharacterController(this);
+    this.farmerController = new FarmerController(this);
   }
 
   get characters() {

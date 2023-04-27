@@ -3,7 +3,7 @@ import { Character, IPosition, ItemData } from "alclient";
 import { Mover } from "./Mover.js";
 import { FarmerGoal, LocalChacterInfo } from "./Types.js";
 import { CharacterMessager } from "./CharacterMessager.js";
-import { callAPI, getItemQuantity, sleep, smartUseHpOrMp } from "./Utils/Functions.js";
+import { callAPI, getItemPosition, getItemQuantity, sleep, smartUseHpOrMp } from "./Utils/Functions.js";
 import { Bank } from "./Bank.js";
 import { MerchantTaskController } from "./MerchantTasks.js";
 import { CheckCompound } from "./Tasks/CompoundItems.js";
@@ -79,6 +79,14 @@ export class BaseCharacter {
       if (e.id === id) return e;
     }
     return null;
+  }
+
+  getItemPosition(name: ItemName) {
+    return getItemPosition(name, this.ch.items, this.ch.isize);
+  }
+
+  getItemQuantity(name: ItemName) {
+    return getItemQuantity(name, this.ch.items, this.ch.isize);
   }
 
   /**
