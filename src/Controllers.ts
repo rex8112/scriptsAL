@@ -35,11 +35,34 @@ export class MerchantController {
   game: GameController;
   bank: Bank;
   merchant: MerchantCharacter;
+  #canceling: boolean = false;
 
   constructor(gc: GameController, merchant: MerchantCharacter) {
     this.game = gc;
     this.bank = gc.bank;
     this.merchant = merchant;
+  }
+
+  async run() {
+    try {
+      await this.loop();
+    } catch (e) {
+      console.error("Error in Farmer Controller: ", e);
+    }
+    if (this.#canceling === false) {
+      setTimeout(() => { this.run(); }, 250);
+      return;
+    }
+    this.#canceling = false; // Set to false after it has been canceled.
+  }
+
+  async loop() {
+
+  }
+
+  async cancel() {
+    this.#canceling = true;
+    
   }
 
   async cleanInventory() {
@@ -109,9 +132,32 @@ export class MerchantController {
 export class FarmerController {
   game: GameController;
   goals: FarmerGoal[] = [];
+  #canceling: boolean = false;
 
   constructor(gc: GameController) {
     this.game = gc;
+  }
+
+  async run() {
+    try {
+      await this.loop();
+    } catch (e) {
+      console.error("Error in Farmer Controller: ", e);
+    }
+    if (this.#canceling === false) {
+      setTimeout(() => { this.run(); }, 250);
+      return;
+    }
+    this.#canceling = false; // Set to false after it has been canceled.
+  }
+
+  async loop() {
+
+  }
+
+  async cancel() {
+    this.#canceling = true;
+
   }
 
   getFarmers() {
