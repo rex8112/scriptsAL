@@ -152,7 +152,18 @@ export class FarmerController {
   }
 
   async loop() {
+    let farmers = this.getFarmers();
 
+    // Figure out what to have the Farmers do. (Cancel their current task if applicable.)
+
+    // Find the location of the something.
+
+    // Make them do something.
+
+    for (let farmer of farmers) {
+      if (farmer.ch.rip) continue;
+      
+    }
   }
 
   async cancel() {
