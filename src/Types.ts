@@ -3,8 +3,10 @@ import { CharacterEntitySlotsInfos } from "typed-adventureland/dist/src/entities
 import { BaseCharacter, MerchantCharacter } from "./Character.js";
 import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter.js";
 import Location from "./Utils/Location.js";
+import { ItemName, MonsterName } from "alclient";
 
-export type CustomCharacter = BaseCharacter | MerchantCharacter | FarmerCharacter | PriestCharacter
+export type CustomCharacter = BaseCharacter | MerchantCharacter | FarmingCharacter;
+export type FarmingCharacter = FarmerCharacter | PriestCharacter;
 
 export interface CharacterData {
   gold: number;
@@ -26,8 +28,8 @@ export interface LocalChacterInfo {
 }
 
 export interface FarmerGoal {
-  name: MonsterKey;
-  for: {name: ItemKey | "gold" | "kills", amount: number};
+  name: MonsterName;
+  for: {name: ItemName | "gold" | "kills", amount: number};
   issued: number;
   focus?: true;
 }

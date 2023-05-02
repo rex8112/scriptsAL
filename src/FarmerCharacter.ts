@@ -4,7 +4,7 @@ import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
 import { canUseSkill, get_position, sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
-import { Character } from "alclient";
+import { Character, Entity } from "alclient";
 import { GameController } from "./Controllers.js";
 
 
@@ -180,12 +180,12 @@ export class FarmerCharacter extends BaseCharacter {
   }
 
   async attack(target: Entity) {
-    change_target(target);
     let k = setInterval(() => { this.kite(target); }, 250);
-    while (target.dead === undefined && !character.rip) {
-      if (can_attack(target)) {
-        set_message("Attacking");
-        attack(target);
+    while (target.hp > 0 && !this.ch.rip) {
+      if (!this.ch.isOnCooldown("attack")) {
+        console.log(`Attacking ${target.id}`);
+        await this.ch.basicAttack(target.id);
+        console.log(`Finished Attacking`)
       }
       await sleep(250);
     }
@@ -194,8 +194,8 @@ export class FarmerCharacter extends BaseCharacter {
 
   async kite(target: Entity) {
     if (this.gettingUnstuck) return;
-    let pos = Vector.fromEntity(character);
-    let targetPos = Vector.fromEntity(target);
+    let pos = Vector.fromPosition(this.ch);
+    let targetPos = Vector.fromPosition(target);
 
     for (let id in parent.entities) {
       let entity = parent.entities[id];

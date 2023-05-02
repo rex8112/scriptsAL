@@ -1,9 +1,10 @@
 import AL, { ItemName, MonsterName } from "alclient";
 import { MerchantCharacter } from "./Character.js";
 import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter.js";
-import { CustomCharacter, FarmerGoal } from "./Types.js";
+import { CustomCharacter, FarmerGoal, FarmingCharacter } from "./Types.js";
 import { Bank } from "./Bank.js";
 import { Items } from "./Items.js";
+import { Vector } from "./Utils/Vector.js";
 
 export class GameController {
   loaded: boolean = false;
@@ -132,6 +133,7 @@ export class MerchantController {
 export class FarmerController {
   game: GameController;
   goals: FarmerGoal[] = [];
+  default: MonsterName = "crabx";
   #canceling: boolean = false;
 
   constructor(gc: GameController) {
@@ -153,17 +155,39 @@ export class FarmerController {
 
   async loop() {
     let farmers = this.getFarmers();
+    let leader = Object.values(farmers)[0];
 
     // Figure out what to have the Farmers do. (Cancel their current task if applicable.)
+    let target = this.goals[0]?.name ?? this.default;
 
     // Find the location of the something.
+    let monster = this.find_target(leader, target);
+    if (!monster) {
+      let location = AL.Pathfinder.locateMonster(target);
+      if (!location) {
+        throw new Error(`Couldn't find location for monster of type ${target}`);
+      }
+      let moves = [];
+      for (let name in farmers) {
+        let farmer = farmers[name];
+        moves.push(farmer.move(location[0]));
+      }
+
+      await Promise.all(moves);
+      monster = this.find_target(leader, target);
+      if (!monster) {
+        throw new Error(`${leader.name} couldn't find monster of type ${target}`);
+      }
+    }
 
     // Make them do something.
-
-    for (let farmer of farmers) {
+    let attacks = [];
+    for (let name in farmers) {
+      let farmer = farmers[name];
       if (farmer.ch.rip) continue;
-      
+      attacks.push(farmer.attack(monster));
     }
+    await Promise.all(attacks);
   }
 
   async cancel() {
@@ -171,12 +195,42 @@ export class FarmerController {
 
   }
 
-  getFarmers() {
-    let farmers = [];
+  find_target(char: CustomCharacter, monType: MonsterName, noTarget: boolean = true) {
+    let cpos = Vector.fromPosition(char.ch);
+    let target = char.ch.getTargetEntity();
+    if (target !== null)
+      return target;
+
+    let entities = char.ch.getEntities();
+    for (let id in entities) {
+      let entity = entities[id];
+      let epos = Vector.fromPosition(entity);
+      let new_target = null;
+      if (entity.type !== monType)
+        continue;
+      if (noTarget == false || !entity.target)
+        new_target = entity;
+      else if (char.getPlayer(entity.target)?.ctype === "merchant") {
+        // Override any future checks. SAVE THE MERCHANT!
+        target = entity;
+        break;
+      } else if (Object.keys(this.getFarmers()).includes(entity.target)) {
+        new_target = entity;
+      }
+      if (target === null && new_target)
+        target = new_target;
+      else if (new_target && cpos.distanceFromSqr(epos) < cpos.distanceFromSqr(Vector.fromPosition(target)))
+        target = new_target;
+    }
+    return target;
+  }
+
+  getFarmers(): {[name: string]: FarmingCharacter} {
+    let farmers: {[name: string]: FarmingCharacter} = {};
     for (let name in this.game.characters) {
       let char = this.game.characters[name];
       if (char.ch.ctype !== "merchant") {
-        farmers.push(char);
+        farmers[char.name] = <FarmingCharacter>char;
       }
     }
     return farmers;
