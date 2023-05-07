@@ -4,7 +4,7 @@ import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
 import { canUseSkill, get_position, sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
-import { Character, Entity } from "alclient";
+import AL, { Character, Entity } from "alclient";
 import { GameController } from "./Controllers.js";
 
 
@@ -181,15 +181,18 @@ export class FarmerCharacter extends BaseCharacter {
 
   async attack(target: Entity) {
     let k = setInterval(() => { this.kite(target); }, 250);
-    while (target.hp > 0 && !this.ch.rip) {
-      if (!this.ch.isOnCooldown("attack")) {
-        console.log(`Attacking ${target.id}`);
-        await this.ch.basicAttack(target.id);
-        console.log(`Finished Attacking`)
+    try {
+      while (target.hp > 0 && !this.ch.rip) {
+        if (!this.ch.isOnCooldown("attack") && Vector.fromPosition(this.ch).distanceFromSqr(Vector.fromPosition(target)) <= (this.ch.range * this.ch.range)) {
+          console.log(`Attacking ${target.id}`);
+          await this.ch.basicAttack(target.id);
+          console.log(`Finished Attacking`)
+        }
+        await sleep(250);
       }
-      await sleep(250);
+    } finally {
+      clearInterval(k);
     }
-    clearInterval(k);
   }
 
   async kite(target: Entity) {
@@ -197,16 +200,15 @@ export class FarmerCharacter extends BaseCharacter {
     let pos = Vector.fromPosition(this.ch);
     let targetPos = Vector.fromPosition(target);
 
-    for (let id in parent.entities) {
-      let entity = parent.entities[id];
-      let entityPos = Vector.fromEntity(entity);
+    let entities = this.ch.getEntities();
+    for (let id in entities) {
+      let entity = entities[id];
+      let entityPos = Vector.fromPosition(entity);
       let distanceToBe;
-      if (entity.type !== "monster") {
-        distanceToBe = 10;
-      } else if (character.range > entity.range) {
-        distanceToBe = (character.range + entity.range) / 2;
+      if (this.ch.range > entity.range) {
+        distanceToBe = (this.ch.range + entity.range) / 2;
       } else {
-        distanceToBe = character.range - 10;
+        distanceToBe = this.ch.range - 10;
       }
 
       let move = false;
@@ -235,11 +237,10 @@ export class FarmerCharacter extends BaseCharacter {
       }
     }
 
-    if (can_move_to(pos.x, pos.y)) {
-      move(pos.x, pos.y);
+    if (AL.Pathfinder.canWalkPath(this.ch, {x: pos.x, y: pos.y})) {
+      this.ch.move(pos.x, pos.y);
 
-    } else if(can_move({map: character.map, x: targetPos.x, y: targetPos.y, going_x: pos.x, going_y: pos.y, base: character.base}) &&
-              pos.distanceFromSqr(Vector.fromEntity(character)) > 100) {
+    } else if(AL.Pathfinder.canStand({x: pos.x, y: pos.y})) {
       this.gettingUnstuck = true;
       try {
         await this.move(pos);
@@ -247,7 +248,7 @@ export class FarmerCharacter extends BaseCharacter {
         this.gettingUnstuck = false;
       }
     } else {
-      move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50));
+      this.ch.move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50));
     }
   }
 }

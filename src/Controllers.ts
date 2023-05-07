@@ -195,6 +195,37 @@ export class FarmerController {
 
   }
 
+  onLoot(loot) {
+    let toRemove: number[] = [];
+    for (let i = 0; i < this.goals.length; i++) {
+      let goal = this.goals[i];
+      if (goal.name !== this.currentType) continue;
+
+      let f = goal.for
+      if (f.name === "gold") {
+        f.amount -= loot.gold;
+      } else if (f.name === "kills") {
+        f.amount -= 1;
+      } else if (loot.items) {
+        let items = loot.items.filter(i => { return i.name === f.name; });
+        if (!items) continue;
+        // I don't know, maybe you can loot multiple of an item.
+        for (let item of items) {
+          console.log(item);
+          f.amount -= item.q ?? 1;
+        }
+      }
+      if (f.amount <= 0) toRemove.push(i);
+    }
+
+    if (toRemove.length > 0) {
+      toRemove.sort((a, b) => { return b - a });
+      for (let i of toRemove) {
+        this.goals.splice(i, 1);
+      }
+    }
+  }
+
   find_target(char: CustomCharacter, monType: MonsterName, noTarget: boolean = true) {
     let cpos = Vector.fromPosition(char.ch);
     let target = char.ch.getTargetEntity();
