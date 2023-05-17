@@ -196,6 +196,19 @@ export class BaseCharacter {
     func().finally(() => {this.working = false});
   }
 
+  smartUseHpOrMp() {
+    var heal = this.ch.locateItem("hpot0");
+    var mana = this.ch.locateItem("mpot0");
+
+    if (this.ch.isOnCooldown("use_hp")) {
+      return new Promise((resolve) => {resolve("On Cooldown")});
+    }
+    if (this.ch.hp < this.ch.max_hp / 2) 
+      return this.ch.useHPPot(heal)
+    else if (this.ch.mp < this.ch.max_mp-300)
+      return this.ch.useMPPot(mana)
+  }
+
   respawn() {
     if (this.ch.rip) {
       this.ch.respawn();

@@ -36,6 +36,7 @@ export class FarmerCharacter extends BaseCharacter {
   async run() {}
 
   async attack(target: Entity) {
+    console.log(this.name, "Preparing to attack", target.id);
     let k = setInterval(() => { this.kite(target); }, 250);
     try {
       while (target.hp > 0 && !this.ch.rip) {
@@ -46,6 +47,8 @@ export class FarmerCharacter extends BaseCharacter {
         }
         await sleep(250);
       }
+    } catch (e) {
+      console.error("Error in attack: ", e);
     } finally {
       clearInterval(k);
     }
@@ -104,11 +107,8 @@ export class FarmerCharacter extends BaseCharacter {
         this.gettingUnstuck = false;
       }
     } else {
-      try{
-        this.ch.move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50));
-      } catch (e) {
-        
-      }
+      this.ch.move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50))
+        .catch((e) => {console.error(e)});
     }
   }
 }
