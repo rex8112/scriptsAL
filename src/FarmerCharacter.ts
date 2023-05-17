@@ -4,15 +4,15 @@ import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
 import { canUseSkill, get_position, sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
-import AL, { Character, Entity } from "alclient";
+import AL, { Character, Entity, MonsterName } from "alclient";
 import { GameController } from "./Controllers.js";
 
 
 export class FarmerCharacter extends BaseCharacter {
   mode: "leader" | "follower" | "none" = "none";
   attackMode: "single" | "multiple" = "single";
-  defaultType: MonsterKey = "crabx";
-  currentType: MonsterKey = this.defaultType;
+  defaultType: MonsterName = "crabx";
+  currentType: MonsterName = this.defaultType;
   goals: FarmerGoal[] = [];
   event?: EventData;
   gettingUnstuck: boolean = false;
@@ -31,153 +31,9 @@ export class FarmerCharacter extends BaseCharacter {
     if (!this.supportInterval) this.supportInterval = setInterval(() => { this.supportSkills(); }, 250);
   }
 
-  addGoal(goal: FarmerGoal) {
-    this.goals.push(goal);
-    this.saveGoals();
-  }
-
-  saveGoals() {
-    set("farmGoals", this.goals);
-  }
-
-  loadGoals() {
-    this.goals = get("farmGoals") ?? [];
-  }
-
-  async onEvent(event: {name: string, map?: MapKey, x?: number, y?: number}) {
-    let data: EventData;
-    console.log(event);
-    if (event.name === "wabbit") {
-      data = {entity: "wabbit", name: <EventKey>event.name};
-    } else {
-      return;
-    }
-    await sleep(1000);
-    this.event = data;
-    console.log(data);
-  }
-
-  onLoot(loot: LootEvent) {
-    let toRemove: number[] = [];
-    for (let i = 0; i < this.goals.length; i++) {
-      let goal = this.goals[i];
-      if (goal.name !== this.currentType) continue;
-
-      let f = goal.for
-      if (f.name === "gold") {
-        f.amount -= loot.gold;
-      } else if (f.name === "kills") {
-        f.amount -= 1;
-      } else if (loot.items) {
-        let items = loot.items.filter(i => { return i.name === f.name; });
-        if (!items) continue;
-        // I don't know, maybe you can loot multiple of an item.
-        for (let item of items) {
-          console.log(item);
-          f.amount -= item.q ?? 1;
-        }
-      }
-      if (f.amount <= 0) toRemove.push(i);
-    }
-
-    if (toRemove.length > 0) {
-      toRemove.sort((a, b) => { return b - a });
-      for (let i of toRemove) {
-        this.goals.splice(i, 1);
-      }
-    }
-    if (this.mode === "leader")
-      this.saveGoals();
-  }
-
-  setLeader(leader: string) {
-    super.setLeader(leader);
-    if (leader === this.name) {
-      this.mode = "leader";
-      this.loadGoals();
-      game_log("Becoming Leader", "orange");
-    } else {
-      this.mode = "follower";
-      game_log(`Becoming Follower to ${this.leader}`, "orange");
-    }
-  }
-
   async supportSkills() {}
 
-  async run() {
-    if (character.rip) return;
-    if (this.event && GameEvent[this.event.name] && GameEvent[this.event.name][this.mode]) {
-      await GameEvent[this.event.name][this.mode](this);
-    } else if (this.mode == "follower") {
-      if (this.leader === null)
-        return;
-
-      let l = get_player(this.leader);
-      if (l === null) {
-        await this.move(get_position(this.leader));
-        return;
-      }
-      while (simple_distance(character, l) > Math.max(character.range, 200))
-        await this.move(l);
-
-      let t = get_target_of(l);
-      if (t === null)
-        return;
-
-      await this.attack(t);
-    } else if (this.mode == "leader") {
-      this.checkTargetType();
-      let target = await this.find_target();
-      if (target === null) {
-        await this.move(this.currentType);
-        target = await this.find_target();
-      }
-      if (target === null)
-        return;
-
-      await this.attack(target);
-    }
-  }
-
-  checkTargetType() {
-    if (this.goals.length) {
-      this.currentType = this.goals[0].name;
-    } else {
-      this.currentType = this.defaultType;
-    }
-  }
-
-  find_target(monType?: MonsterKey, noTarget: boolean = true) {
-    let cpos = Vector.fromEntity(character);
-    let target = get_targeted_monster();
-    if (target !== null)
-      return target;
-
-    monType = monType ?? this.currentType;
-    for (let id in parent.entities) {
-      let entity = parent.entities[id];
-      let epos = Vector.fromEntity(entity);
-      let new_target = null;
-      if (entity.mtype !== monType)
-        continue;
-      if (noTarget == false || !entity.target)
-        new_target = entity;
-      else if (parent.entities[entity.target]?.ctype === "merchant") {
-        // Override any future checks. SAVE THE MERCHANT!
-        target = entity;
-        break;
-      } else if (this.attackMode === "single" && Object.keys(get_party()).includes(entity.target)) {
-        new_target = entity;
-      } else if (this.attackMode === "multiple" && !Object.keys(get_party()).includes(entity.target)) {
-        new_target = entity;
-      }
-      if (target === null)
-        target = new_target;
-      else if (new_target && cpos.distanceFromSqr(epos) < cpos.distanceFromSqr(Vector.fromEntity(target)))
-        target = new_target;
-    }
-    return target;
-  }
+  async run() {}
 
   async attack(target: Entity) {
     let k = setInterval(() => { this.kite(target); }, 250);
@@ -240,7 +96,7 @@ export class FarmerCharacter extends BaseCharacter {
     if (AL.Pathfinder.canWalkPath(this.ch, {x: pos.x, y: pos.y})) {
       this.ch.move(pos.x, pos.y);
 
-    } else if(AL.Pathfinder.canStand({x: pos.x, y: pos.y})) {
+    } else if(AL.Pathfinder.canStand({x: pos.x, y: pos.y, map: this.ch.map})) {
       this.gettingUnstuck = true;
       try {
         await this.move(pos);
@@ -248,22 +104,13 @@ export class FarmerCharacter extends BaseCharacter {
         this.gettingUnstuck = false;
       }
     } else {
-      this.ch.move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50));
+      try{
+        this.ch.move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50));
+      } catch (e) {
+        
+      }
     }
   }
-}
-
-function getMonstersThatTarget(entity: Entity) {
-  let monsters = [];
-  for (let ename in parent.entities) {
-    let monster = parent.entities[ename];
-    if (monster.type !== "monster") continue;
-    if (monster.target === entity.name) {
-      monsters.push(monster);
-    }
-  }
-
-  return monsters;
 }
 
 export class PriestCharacter extends FarmerCharacter {

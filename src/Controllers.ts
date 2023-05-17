@@ -5,6 +5,7 @@ import { CustomCharacter, FarmerGoal, FarmingCharacter } from "./Types.js";
 import { Bank } from "./Bank.js";
 import { Items } from "./Items.js";
 import { Vector } from "./Utils/Vector.js";
+import { sleep } from "./Utils/Functions.js";
 
 export class GameController {
   loaded: boolean = false;
@@ -27,6 +28,10 @@ export class GameController {
     if (!merch) throw new Error("Merchant didn't start.")
     await this.bank.updateInfo(merch);
     this.loaded = true;
+
+    await sleep(5000);
+
+    this.farmerController.run();
   }
 
 
@@ -195,7 +200,7 @@ export class FarmerController {
 
   }
 
-  onLoot(loot) {
+  /* onLoot(loot) {
     let toRemove: number[] = [];
     for (let i = 0; i < this.goals.length; i++) {
       let goal = this.goals[i];
@@ -224,17 +229,19 @@ export class FarmerController {
         this.goals.splice(i, 1);
       }
     }
-  }
+  } */
 
   find_target(char: CustomCharacter, monType: MonsterName, noTarget: boolean = true) {
     let cpos = Vector.fromPosition(char.ch);
     let target = char.ch.getTargetEntity();
-    if (target !== null)
+    console.log("Current Target: ", target);
+    if (target)
       return target;
 
     let entities = char.ch.getEntities();
     for (let id in entities) {
       let entity = entities[id];
+      console.log(`Checking Entity: ${entity.name} ${entity.type} | ${id}`);
       let epos = Vector.fromPosition(entity);
       let new_target = null;
       if (entity.type !== monType)
@@ -246,9 +253,10 @@ export class FarmerController {
         target = entity;
         break;
       } else if (Object.keys(this.getFarmers()).includes(entity.target)) {
+        console.log("Entity targetting party.");
         new_target = entity;
       }
-      if (target === null && new_target)
+      if (!target && new_target)
         target = new_target;
       else if (new_target && cpos.distanceFromSqr(epos) < cpos.distanceFromSqr(Vector.fromPosition(target)))
         target = new_target;
@@ -303,7 +311,7 @@ export class CharacterController {
         this.characters[name] = new FarmerCharacter(this.game, c);
       } else if (AL.Game.characters[name]?.type === "priest") {
         let c = await AL.Game.startPriest(name, "US", "I");
-        this.characters[name] = new PriestCharacter(this.game, c);
+        this.characters[name] = new FarmerCharacter(this.game, c);
       } else {
         throw new Error(`Class type not supported for character: ${name}`);
       }
