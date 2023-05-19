@@ -42,7 +42,7 @@ export class BaseCharacter {
 
   startTasks() {
     if (this.potionUseTask === null)
-      this.potionUseTask = setInterval(smartUseHpOrMp, 250);
+      this.potionUseTask = setInterval(() => { this.smartUseHpOrMp() }, 250);
     if (this.lootTask === null)
       this.lootTask = setInterval(() => {}, 250);
     if (this.respawnTask === null)
@@ -241,8 +241,8 @@ export class MerchantCharacter extends BaseCharacter {
     //if (this.updateTask === null)
     //  this.updateTask = setInterval(() => { this.updateCharacterInfo() }, 30_000);
     
-    this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
-    this.taskController.enqueueTask(new CheckCompound(this, this.taskController));
+    //this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
+    //this.taskController.enqueueTask(new CheckCompound(this, this.taskController));
   }
 
   async farmerRun() {

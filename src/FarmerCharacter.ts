@@ -73,7 +73,7 @@ export class FarmerCharacter extends BaseCharacter {
       let move = false;
       let squared = distanceToBe * distanceToBe;
       let distanceSquared = entityPos.distanceFromSqr(pos);
-      if (entity == target) {
+      if (entity.id == target.id) {
         if (distanceSquared !== squared)
           move = true;
       } else {

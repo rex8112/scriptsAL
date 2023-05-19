@@ -300,6 +300,7 @@ export class CharacterController {
 
   async deploy() {
     for (let name of this.selectedCharacters) {
+      let c;
       if (AL.Game.characters[name]?.type === "merchant") {
         let c = await AL.Game.startMerchant(name, "US", "I");
         this.characters[name] = new MerchantCharacter(this.game, c);
@@ -315,6 +316,7 @@ export class CharacterController {
       } else {
         throw new Error(`Class type not supported for character: ${name}`);
       }
+      this.characters[name].startRun();
     }
   }
 }
