@@ -10,7 +10,7 @@
   "author": "rex8112",
   "license": "ISC",
   "dependencies": {
-    "alclient": "^0.15.84",
+    "alclient": "^0.18.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
   }
