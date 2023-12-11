@@ -1,12 +1,12 @@
-import { Entity, MapKey } from "typed-adventureland";
+import { MapName, Entity } from "alclient";
 import { Vector } from "./Vector.js";
 
 export default class Location {
   vector: Vector;
-  map: MapKey;
+  map: MapName;
   instance: unknown;
 
-  constructor(position: Vector, map: MapKey, instance: unknown = undefined) {
+  constructor(position: Vector, map: MapName, instance: unknown = undefined) {
     this.vector = position;
     this.map = map;
     this.instance = instance;
@@ -17,7 +17,7 @@ export default class Location {
     return new Location(v, ent.map, ent.in);
   }
 
-  static fromPosition(pos: {x:number,y:number,map:MapKey,instance?:unknown}) {
+  static fromPosition(pos: {x:number,y:number,map:MapName,instance?:unknown}) {
     let v = Vector.fromPosition(pos);
     return new Location(v, pos.map, pos.instance);
   }
