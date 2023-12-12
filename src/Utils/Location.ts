@@ -1,4 +1,4 @@
-import { MapName, Entity } from "alclient";
+import { MapName, Entity, Character } from "alclient";
 import { Vector } from "./Vector.js";
 
 export default class Location {
@@ -12,7 +12,7 @@ export default class Location {
     this.instance = instance;
   }
 
-  static fromEntity(ent: Entity) {
+  static fromEntity(ent: Entity | Character) {
     let v = Vector.fromEntity(ent);
     return new Location(v, ent.map, ent.in);
   }

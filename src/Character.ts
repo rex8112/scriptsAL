@@ -2,12 +2,9 @@ import AL, { Entity, ItemName, Mage, Merchant, MonsterName, Player, PullMerchant
 import { Character, IPosition, ItemData } from "alclient";
 import { Mover } from "./Mover.js";
 import { FarmerGoal, LocalChacterInfo } from "./Types.js";
-import { CharacterMessager } from "./CharacterMessager.js";
-import { callAPI, getItemPosition, getItemQuantity, sleep, smartUseHpOrMp } from "./Utils/Functions.js";
+import { getItemPosition, getItemQuantity } from "./Utils/Functions.js";
 import { Bank } from "./Bank.js";
 import { MerchantTaskController } from "./MerchantTasks.js";
-import { CheckCompound } from "./Tasks/CompoundItems.js";
-import { CheckUpgrade } from "./Tasks/UpgradeItems.js";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers.js";
 import { Items } from "./Items.js";
 import Location from "./Utils/Location.js";
@@ -243,10 +240,6 @@ export class MerchantCharacter extends BaseCharacter {
     
     //this.taskController.enqueueTask(new CheckUpgrade(this, this.taskController));
     //this.taskController.enqueueTask(new CheckCompound(this, this.taskController));
-  }
-
-  async farmerRun() {
-    this.taskController.enqueueTask(new ReplenishFarmersTask(this), 600);
   }
 
   async tradeBuy(items: {item: ItemName, level?: number, amount: number}[], allow_cross_server: boolean = false) {

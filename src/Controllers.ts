@@ -1,4 +1,4 @@
-import AL, { ItemName, MonsterName } from "alclient";
+import AL, { Entity, IPosition, ItemName, MonsterName } from "alclient";
 import { MerchantCharacter } from "./Character.js";
 import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter.js";
 import { CustomCharacter, FarmerGoal, FarmingCharacter } from "./Types.js";
@@ -166,7 +166,7 @@ export class FarmerController {
     let target = this.goals[0]?.name ?? this.default;
 
     // Find the location of the something.
-    let monster = this.find_target(leader, target);
+    let monster = this.find_target(target);
     if (!monster) {
       let location = AL.Pathfinder.locateMonster(target);
       if (!location) {
@@ -179,7 +179,7 @@ export class FarmerController {
       }
 
       await Promise.all(moves);
-      monster = this.find_target(leader, target);
+      monster = this.find_target(target);
       if (!monster) {
         throw new Error(`${leader.name} couldn't find monster of type ${target}`);
       }
@@ -198,6 +198,17 @@ export class FarmerController {
   async cancel() {
     this.#canceling = true;
 
+  }
+
+  move_party(dest: string | IPosition) {
+    let farmers = this.getFarmers();
+    let moves = [];
+    for (let name in farmers) {
+      let farmer = farmers[name];
+      moves.push(farmer.move(dest));
+    }
+
+    return Promise.all(moves);
   }
 
   /* onLoot(loot) {
@@ -231,12 +242,50 @@ export class FarmerController {
     }
   } */
 
-  find_target(char: CustomCharacter, monType: MonsterName, noTarget: boolean = true) {
+  find_target(monType: MonsterName, noTarget: boolean = true): Entity | null {
+    let farmers = this.getFarmers();
+    let positions = [];
+    let targets = [];
+    for (let name in farmers) {
+      let farmer = farmers[name];
+      positions.push(Vector.fromPosition(farmer.ch));
+    }
+
+    for (let name in farmers) {
+      let farmer = farmers[name];
+
+      let target = this.find_target_from_character(farmer, monType, noTarget);
+      if (target != null) {
+        targets.push(target);
+      }
+    }
+
+    let target = null;
+    let distance = null;
+    for (let t of targets) {
+      let pos = Vector.fromEntity(t);
+
+      let distances = [];
+      for (let name in farmers) {
+        let farmer = farmers[name];
+        let farmPos = Vector.fromEntity(farmer.ch);
+        let distance = farmPos.distanceFromSqr(pos);
+        distances.push(distance);
+      }
+      let avg = distances.reduce((a, b) => { return a+b; }) / distances.length;
+      if (distance == null || avg < distance) {
+        target = t;
+        distance = avg;
+      }
+    }
+
+    return target;
+  }
+
+  find_target_from_character(char: CustomCharacter, monType: MonsterName, noTarget: boolean = true): Entity | null {
     let cpos = Vector.fromPosition(char.ch);
     let target = char.ch.getTargetEntity();
     console.log("Current Target: ", target);
-    if (target)
-      return target;
 
     let entities = char.ch.getEntities();
     for (let id in entities) {

@@ -2,7 +2,7 @@ import { EventData, EventLocation, FarmerGoal } from "./Types.js";
 import { Vector } from "./Utils/Vector.js";
 import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
-import { canUseSkill, get_position, sleep } from "./Utils/Functions.js";
+import { sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
 import AL, { Character, Entity, MonsterName } from "alclient";
 import { GameController } from "./Controllers.js";
