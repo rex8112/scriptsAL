@@ -1,4 +1,4 @@
-import AL, { Entity, IPosition, ItemName, MonsterName } from "alclient";
+import AL, { DeathData, Entity, IPosition, ItemName, MonsterName, Player } from "alclient";
 import { MerchantCharacter } from "./Character.js";
 import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter.js";
 import { CustomCharacter, FarmerGoal, FarmingCharacter } from "./Types.js";
@@ -6,6 +6,7 @@ import { Bank } from "./Bank.js";
 import { Items } from "./Items.js";
 import { Vector } from "./Utils/Vector.js";
 import { sleep } from "./Utils/Functions.js";
+import Location from "./Utils/Location.js";
 
 export class GameController {
   loaded: boolean = false;
@@ -139,6 +140,10 @@ export class FarmerController {
   game: GameController;
   goals: FarmerGoal[] = [];
   default: MonsterName = "crabx";
+  
+  fighting: FarmerCharacter[] = [];
+  targets: Entity[] = [];
+
   #canceling: boolean = false;
 
   constructor(gc: GameController) {
@@ -166,37 +171,104 @@ export class FarmerController {
     let target = this.goals[0]?.name ?? this.default;
 
     // Find the location of the something.
-    let monster = this.find_target(target);
-    if (!monster) {
-      let location = AL.Pathfinder.locateMonster(target);
-      if (!location) {
-        throw new Error(`Couldn't find location for monster of type ${target}`);
-      }
-      let moves = [];
-      for (let name in farmers) {
-        let farmer = farmers[name];
-        moves.push(farmer.move(location[0]));
-      }
-
-      await Promise.all(moves);
-      monster = this.find_target(target);
+    if (this.targets.length == 0) {
+      let monster = this.find_target(target);
       if (!monster) {
-        throw new Error(`${leader.name} couldn't find monster of type ${target}`);
+        let location = AL.Pathfinder.locateMonster(target);
+        if (!location) {
+          throw new Error(`Couldn't find location for monster of type ${target}`);
+        }
+        let moves = [];
+        for (let name in farmers) {
+          let farmer = farmers[name];
+          moves.push(farmer.move(location[0]));
+        }
+        
+        await Promise.all(moves);
+        monster = this.find_target(target);
+        if (!monster) {
+          throw new Error(`${leader.name} couldn't find monster of type ${target}`);
+        }
       }
+      this.targets.push(monster);
     }
-
-    // Make them do something.
-    let attacks = [];
-    for (let name in farmers) {
-      let farmer = farmers[name];
-      if (farmer.ch.rip) continue;
-      attacks.push(farmer.attack(monster));
+      
+      // Make them do something.
+      await this.party_attack();
     }
-    await Promise.all(attacks);
-  }
 
   async cancel() {
     this.#canceling = true;
+  }
+
+  async party_find_target() {
+
+  }
+
+  async party_attack() {
+    if (this.targets.length == 0) return;
+    
+    let to_move: FarmerCharacter[] = []
+    for (let i in this.fighting) {
+      let farmer = this.fighting[i];
+      let target = farmer.getEntity(this.targets[0].id);
+      if (target == null) {
+        to_move.push(farmer);
+      } else {
+        let attack_pos = this.get_attack_position(farmer, target).asPosition();
+        if (AL.Pathfinder.canWalkPath(farmer.ch, attack_pos)) {
+          farmer.ch.move(attack_pos.x, attack_pos.y, { resolveOnStart: true });
+        } else {
+          to_move.push(farmer);
+        }
+      }
+    }
+
+    for (let i in to_move) {
+      let farmer = to_move[i];
+      console.log("Removing Distant Character", farmer.name);
+      let index = this.fighting.indexOf(farmer);
+      this.fighting.splice(index, 1);
+    }
+
+    let promises = [];
+    for (let i in this.fighting) {
+      let farmer = this.fighting[i];
+      promises.push(farmer.attack(this.targets[0]));
+      promises.push(farmer.kite(this.targets[0]));
+    }
+
+    for (let i in to_move) {
+      let farmer = to_move[i];
+      let target = this.fighting[0];
+
+      console.log("Moving Distant Character", farmer.name);
+      farmer.move(target.ch).then((pos) => {
+        this.fighting.push(farmer);
+        console.log("Character arrived", farmer.name);
+      });
+    }
+
+    await Promise.all(promises);
+  }
+
+  get_attack_position(fighter: CustomCharacter, target: Entity | Player): Location {
+    let fpos = Vector.fromPosition(fighter.ch);
+    let tpos = Vector.fromEntity(target);
+    let distanceToBe;
+
+    if (fighter.ch.range > target.range) {
+      distanceToBe = (fighter.ch.range + target.range) / 2;
+    } else {
+      distanceToBe = fighter.ch.range - 10;
+    }
+    
+    let pos = tpos.pointTowards(fpos, distanceToBe);
+    
+    return new Location(pos, target.map);
+  }
+
+  clear_status() {
 
   }
 
@@ -323,6 +395,18 @@ export class FarmerController {
     }
     return farmers;
   }
+
+  onDeath(data: DeathData) {
+    let remove = [];
+    for (let i in this.targets) {
+      let target = this.targets[i];
+      if (target.id == data.id) remove.push(target);
+    }
+
+    for (let target of remove) {
+      this.targets.splice(this.targets.indexOf(target), 1);
+    }
+  }
 }
 
 export class CharacterController {
@@ -355,13 +439,19 @@ export class CharacterController {
         this.characters[name] = new MerchantCharacter(this.game, c);
       } else if (AL.Game.characters[name]?.type === "mage") {
         let c = await AL.Game.startMage(name, "US", "I");
-        this.characters[name] = new FarmerCharacter(this.game, c);
+        let fc = new FarmerCharacter(this.game, c);
+        this.characters[name] = fc;
+        this.game.farmerController.fighting.push(fc);
       } else if (AL.Game.characters[name]?.type === "ranger") {
         let c = await AL.Game.startRanger(name, "US", "I");
-        this.characters[name] = new FarmerCharacter(this.game, c);
+        let fc = new FarmerCharacter(this.game, c);
+        this.characters[name] = fc;
+        this.game.farmerController.fighting.push(fc);
       } else if (AL.Game.characters[name]?.type === "priest") {
         let c = await AL.Game.startPriest(name, "US", "I");
-        this.characters[name] = new FarmerCharacter(this.game, c);
+        let fc = new FarmerCharacter(this.game, c);
+        this.characters[name] = fc;
+        this.game.farmerController.fighting.push(fc);
       } else {
         throw new Error(`Class type not supported for character: ${name}`);
       }

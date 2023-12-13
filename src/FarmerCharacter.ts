@@ -4,7 +4,7 @@ import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
 import { sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
-import AL, { Character, Entity, MonsterName } from "alclient";
+import AL, { Character, DeathData, Entity, MonsterName } from "alclient";
 import { GameController } from "./Controllers.js";
 
 
@@ -21,6 +21,7 @@ export class FarmerCharacter extends BaseCharacter {
 
   constructor(gc: GameController, ch: Character) {
     super(gc, ch);
+    this.ch.socket.on("death", (data) => { this.onDeath(data); })
     //ch.on("loot", (data) => { this.onLoot(data); });
     //game.on("event", (data) => { this.onEvent(data); });
   }
@@ -37,20 +38,14 @@ export class FarmerCharacter extends BaseCharacter {
 
   async attack(target: Entity) {
     console.log(this.name, "Preparing to attack", target.id);
-    let k = setInterval(() => { this.kite(target); }, 250);
     try {
-      while (target.hp > 0 && !this.ch.rip) {
-        if (!this.ch.isOnCooldown("attack") && Vector.fromPosition(this.ch).distanceFromSqr(Vector.fromPosition(target)) <= (this.ch.range * this.ch.range)) {
-          console.log(`Attacking ${target.id}`);
-          await this.ch.basicAttack(target.id);
-          console.log(`Finished Attacking`)
-        }
-        await sleep(250);
+      if (!this.ch.isOnCooldown("attack") && Vector.fromPosition(this.ch).distanceFromSqr(Vector.fromPosition(target)) <= (this.ch.range * this.ch.range)) {
+        console.log(`Attacking ${target.id}`);
+        await this.ch.basicAttack(target.id);
+        console.log(`Finished Attacking`)
       }
     } catch (e) {
       console.error("Error in attack: ", e);
-    } finally {
-      clearInterval(k);
     }
   }
 
@@ -110,6 +105,10 @@ export class FarmerCharacter extends BaseCharacter {
       this.ch.move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50))
         .catch((e) => {console.error(e)});
     }
+  }
+
+  onDeath(data: DeathData) {
+    this.game.farmerController.onDeath(data);
   }
 }
 

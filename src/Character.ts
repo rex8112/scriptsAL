@@ -1,4 +1,4 @@
-import AL, { Entity, ItemName, Mage, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
+import AL, { Entity, ItemName, Mage, MapName, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
 import { Character, IPosition, ItemData } from "alclient";
 import { Mover } from "./Mover.js";
 import { FarmerGoal, LocalChacterInfo } from "./Types.js";
@@ -35,6 +35,18 @@ export class BaseCharacter {
 
   get Position(): Location {
     return Location.fromEntity(this.ch);
+  }
+
+  get x(): number {
+    return this.ch.x;
+  }
+
+  get y(): number {
+    return this.ch.y;
+  }
+
+  get map(): MapName {
+    return this.ch.map;
   }
 
   startTasks() {
