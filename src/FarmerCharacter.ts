@@ -4,7 +4,7 @@ import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
 import { sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
-import AL, { Character, DeathData, Entity, MonsterName } from "alclient";
+import AL, { Character, DeathData, Entity, IPosition, MonsterName, Player } from "alclient";
 import { GameController } from "./Controllers.js";
 
 
@@ -15,9 +15,11 @@ export class FarmerCharacter extends BaseCharacter {
   currentType: MonsterName = this.defaultType;
   goals: FarmerGoal[] = [];
   event?: EventData;
+  target?: Entity;
   gettingUnstuck: boolean = false;
 
   supportInterval?: NodeJS.Timer;
+  #kiting: boolean = false;
 
   constructor(gc: GameController, ch: Character) {
     super(gc, ch);
@@ -49,14 +51,35 @@ export class FarmerCharacter extends BaseCharacter {
     }
   }
 
-  async kite(target: Entity) {
+  startKite() {
+    if (!this.#kiting) {
+      this.#kiting = true;
+      this.runKite();
+    }
+  }
+
+  stopKite() {
+    this.#kiting = false;
+  }
+
+  async runKite() {
+    if (this.#kiting) {
+      await this.kite();
+      setTimeout(() => this.runKite(), 250)
+    }
+  }
+
+  async kite() {
     if (this.gettingUnstuck) return;
+    let target = this.target;
     let pos = Vector.fromPosition(this.ch);
-    let targetPos = Vector.fromPosition(target);
+    let lpos: IPosition;
 
     let entities = this.ch.getEntities();
-    for (let id in entities) {
-      let entity = entities[id];
+    let players = this.ch.getPlayers();
+    let both: (Player | Entity)[] = new Array().concat(entities, players);
+    for (let id in both) {
+      let entity = both[id];
       let entityPos = Vector.fromPosition(entity);
       let distanceToBe;
       if (this.ch.range > entity.range) {
@@ -64,11 +87,11 @@ export class FarmerCharacter extends BaseCharacter {
       } else {
         distanceToBe = this.ch.range - 10;
       }
-
+      
       let move = false;
       let squared = distanceToBe * distanceToBe;
       let distanceSquared = entityPos.distanceFromSqr(pos);
-      if (entity.id == target.id) {
+      if (entity.id == target?.id) {
         if (distanceSquared !== squared)
           move = true;
       } else {
@@ -77,7 +100,8 @@ export class FarmerCharacter extends BaseCharacter {
       }
 
       if (move) {
-        if (entityPos.isEqual(pos)) {
+        if (entityPos.isEqual(pos) && target) {
+          let targetPos = Vector.fromPosition(target);
           let u = targetPos.vectorTowards(pos);
           if (Math.random() >= 0.5 ? 1 : -1) {
             u = u.perpendicular();
@@ -87,88 +111,34 @@ export class FarmerCharacter extends BaseCharacter {
           let d = u.multiply(distanceToBe);
           pos = pos.addVector(d);
         }
-        pos = entityPos.pointTowards(pos, distanceToBe);
+        
+        if ("ctype" in entity) {
+          pos = entityPos.pointTowards(pos, 30);
+        } else {
+          pos = entityPos.pointTowards(pos, distanceToBe);
+        }
       }
     }
 
-    if (AL.Pathfinder.canWalkPath(this.ch, {x: pos.x, y: pos.y})) {
-      this.ch.move(pos.x, pos.y);
+    lpos = Location.fromPosition({...pos, map: this.ch.map}).asPosition()
 
-    } else if(AL.Pathfinder.canStand({x: pos.x, y: pos.y, map: this.ch.map})) {
+    if (AL.Pathfinder.canWalkPath(this.ch, lpos)) {
+      this.ch.move(lpos.x, lpos.y).catch((e) => console.error("Error in Kite Movement"));
+
+    } else if(AL.Pathfinder.canStand(lpos)) {
       this.gettingUnstuck = true;
       try {
-        await this.move(pos);
+        await this.move(lpos);
       } finally {
         this.gettingUnstuck = false;
       }
     } else {
-      this.ch.move(pos.x+(100 * Math.random() - 50), pos.y+(100 * Math.random() - 50))
+      this.ch.move(lpos.x+(100 * Math.random() - 50), lpos.y+(100 * Math.random() - 50))
         .catch((e) => {console.error(e)});
     }
   }
 
   onDeath(data: DeathData) {
     this.game.farmerController.onDeath(data);
-  }
-}
-
-export class PriestCharacter extends FarmerCharacter {
-  supportRunning: boolean = false;
-  needsHeal: string[] = [];
-  async supportSkills(): Promise<void> {
-    try {
-      if (this.supportRunning) return;
-      this.supportRunning = true;
-  
-      let members = Object.keys(get_party()).map((m) => get_player(m)).filter((m) => m)
-                    .sort((a, b) => { return (b.max_hp - b.hp) - (a.max_hp - a.hp)});
-  
-      let totalLow = 0;
-      for (let member of members) {
-        if (member.hp <= member.max_hp - (character.heal / 2)) {
-          if (this.needsHeal.includes(member.name)) {
-            this.needsHeal.push(member.name);
-          }
-        }
-        if (member.name !== character.name && getMonstersThatTarget(member).length > 0) {
-          if (canUseSkill("absorb") && is_in_range(member, "absorb")) {
-            await use_skill("absorb", member);
-          }
-        }
-  
-        // If they are still low, mark them as a party heal candidate.
-        if (member.hp <= member.max_hp - 500) totalLow++;
-      }
-  
-      if (totalLow >= 1 && canUseSkill("partyheal")) await use_skill("partyheal");
-    } catch {}
-    this.supportRunning = false;
-  }
-
-  async attack(target: Entity) {
-    change_target(target);
-    let k = setInterval(() => { this.kite(target); }, 250);
-    while (target.dead === undefined && !character.rip) {
-      try{
-        if (!target.s["cursed"] && canUseSkill("curse") && is_in_range(target, "curse")) await use_skill("curse");
-      }
-      catch (error) {
-        console.error("Error in skill", error);
-      }
-      let healTarget;
-      if (this.needsHeal.length > 0) {
-        healTarget = get_player(this.needsHeal[0]);
-      }
-      if (healTarget && canUseSkill("heal") && is_in_range(healTarget, "heal")) {
-        set_message("Healing");
-        use_skill("heal", healTarget);
-        this.needsHeal.splice(0, 1);
-      } else if (can_attack(target)) {
-        set_message("Attacking");
-        attack(target);
-      }
-      await sleep(250);
-    }
-    clearInterval(k);
   }
 }

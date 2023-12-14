@@ -51,11 +51,11 @@ export class BaseCharacter {
 
   startTasks() {
     if (this.potionUseTask === null)
-      this.potionUseTask = setInterval(() => { this.smartUseHpOrMp() }, 250);
+      this.potionUseTask = setInterval(() => { this.smartUseHpOrMp(); }, 250);
     if (this.lootTask === null)
-      this.lootTask = setInterval(() => {}, 250);
+      this.lootTask = setInterval(() => { this.lootAll(); }, 250);
     if (this.respawnTask === null)
-      this.respawnTask = setInterval(() => { this.respawn() }, 15_000);
+      this.respawnTask = setInterval(() => { this.respawn(); }, 15_000);
   }
 
   async startRun() {
@@ -216,6 +216,13 @@ export class BaseCharacter {
       return this.ch.useHPPot(heal)
     else if (this.ch.mp < this.ch.max_mp-300)
       return this.ch.useMPPot(mana)
+  }
+
+  async lootAll() {
+    let chests = this.ch.chests;
+    for (let chest of chests) {
+      await this.ch.openChest(chest[0]);
+    }
   }
 
   respawn() {

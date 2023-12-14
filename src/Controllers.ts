@@ -229,13 +229,14 @@ export class FarmerController {
       console.log("Removing Distant Character", farmer.name);
       let index = this.fighting.indexOf(farmer);
       this.fighting.splice(index, 1);
+      farmer.stopKite();
     }
 
     let promises = [];
     for (let i in this.fighting) {
       let farmer = this.fighting[i];
+      farmer.target = this.targets[0];
       promises.push(farmer.attack(this.targets[0]));
-      promises.push(farmer.kite(this.targets[0]));
     }
 
     for (let i in to_move) {
@@ -245,6 +246,7 @@ export class FarmerController {
       console.log("Moving Distant Character", farmer.name);
       farmer.move(target.ch).then((pos) => {
         this.fighting.push(farmer);
+        farmer.startKite();
         console.log("Character arrived", farmer.name);
       });
     }
@@ -442,16 +444,19 @@ export class CharacterController {
         let fc = new FarmerCharacter(this.game, c);
         this.characters[name] = fc;
         this.game.farmerController.fighting.push(fc);
+        fc.startKite();
       } else if (AL.Game.characters[name]?.type === "ranger") {
         let c = await AL.Game.startRanger(name, "US", "I");
         let fc = new FarmerCharacter(this.game, c);
         this.characters[name] = fc;
         this.game.farmerController.fighting.push(fc);
+        fc.startKite();
       } else if (AL.Game.characters[name]?.type === "priest") {
         let c = await AL.Game.startPriest(name, "US", "I");
         let fc = new FarmerCharacter(this.game, c);
         this.characters[name] = fc;
         this.game.farmerController.fighting.push(fc);
+        fc.startKite();
       } else {
         throw new Error(`Class type not supported for character: ${name}`);
       }
