@@ -23,13 +23,24 @@ export class Vector {
     return this.x === other.x && this.y === other.y;
   }
 
+  /**
+   * Adds a number to each coordinate in the vector.
+   * @param a Number to add.
+   * @returns New vector with added values.
+   */
   add(a: number): Vector {
     return new Vector(this.x + a, this.y + a);
   }
   
+  /**
+   * Adds two vectors together.
+   * @param other Vector to add.
+   * @returns New vector with added values.
+   */
   addVector(other: Vector): Vector {
     return new Vector(this.x + other.x, this.y + other.y);
   }
+
 
   multiply(m: number): Vector {
     return new Vector(this.x * m, this.y * m);
@@ -39,6 +50,11 @@ export class Vector {
     return new Vector(this.x * other.x, this.y * other.y);
   }
 
+  /**
+   * Return the same vector but rotated to be perpendicular.
+   * @param right Should this point right from the point?
+   * @returns A new vector that is perpendicular.
+   */
   perpendicular(right: boolean = false): Vector {
     let v = new Vector(this.y, this.x);
     if (right) {
@@ -49,16 +65,37 @@ export class Vector {
     return v;
   }
 
-  distanceFromSqr(other: Vector): number {
-    let x = Math.pow(other.x - this.x, 2);
-    let y = Math.pow(other.y - this.y, 2);
+  /**
+   * Get the squared distance between vectors. If you need the exact distance either
+   * get the square root of this number or use `Vector.distanceFrom()`.
+   * @param target The vector to get the distance from.
+   * @returns The squared distance betwwen vectors.
+   */
+  distanceFromSqr(target: Vector): number {
+    let x = Math.pow(target.x - this.x, 2);
+    let y = Math.pow(target.y - this.y, 2);
     return x + y;
   }
 
-  distanceFrom(other: Vector): number {
-    return Math.sqrt(this.distanceFromSqr(other));
+  /**
+   * Get the distance between this and the target vector.
+   * 
+   * This method uses square root to get the accurate distance.
+   * This is a computationally heavy operation. If you're using distances
+   * just to compare and find the closest/furthest, consider using 
+   * `Vector.distanceFromSqr()` for quicker comparisons.
+   * @param target The vector to get the distance from.
+   * @returns The distance between vectors.
+   */
+  distanceFrom(target: Vector): number {
+    return Math.sqrt(this.distanceFromSqr(target));
   }
 
+  /**
+   * Get a normalize vector keeping the direction from this pointing towards the target.
+   * @param target the vector to point towards.
+   * @returns A normalized vector.
+   */
   vectorTowards(target: Vector): Vector {
     let v = new Vector(target.x - this.x, target.y - this.y);
     let length = Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2));
