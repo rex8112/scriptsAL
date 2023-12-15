@@ -13,8 +13,9 @@ type Inventory = (ItemData | null)[]
 export function getItem(name: string, inventory: Inventory, isize: number): {item: ItemData, pos: number}[] {
   var items: {item: ItemData, pos: number}[] = [];
   for (let i = 0; i < isize; i++) {
-    if (inventory[i] && inventory[i]?.name==name)
-      items.push({item: inventory[i], pos: i});
+    let item = inventory[i];
+    if (item && item.name==name)
+      items.push({item: item, pos: i});
   }
   return items;
 }
@@ -22,15 +23,17 @@ export function getItem(name: string, inventory: Inventory, isize: number): {ite
 export function getItemQuantity(name: string, inventory: Inventory, isize: number) {
   var quantity = 0
   for (let i = 0; i < isize; i++) {
-    if (inventory[i] && inventory[i].name==name)
-      quantity += inventory[i].q || 0
+    let item = inventory[i];
+    if (item && item.name==name)
+      quantity += item.q || 0
   }
   return quantity
 }
 
 export function getItemPosition(name: string, inventory: Inventory, isize: number) {
   for (let i = 0; i < isize; i++) {
-    if (inventory[i] && inventory[i].name==name)
+    let item = inventory[i];
+    if (item && item.name==name)
       return i;
   }
   return null

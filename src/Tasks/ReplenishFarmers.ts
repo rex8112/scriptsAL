@@ -1,7 +1,6 @@
 import { BaseCharacter, MerchantCharacter } from "../Character.js";
 import { MerchantController } from "../Controllers.js";
 import { Task } from "../MerchantTasks.js";
-import { LocalChacterInfo } from "../Types.js";
 import { getFreeSlots, getItemPosition, getItemQuantity, moveToCharacter } from "../Utils/Functions.js";
 
 export class ReplenishFarmersTask extends Task {

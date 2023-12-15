@@ -1,7 +1,6 @@
 import AL, { Entity, ItemName, Mage, MapName, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
 import { Character, IPosition, ItemData } from "alclient";
-import { Mover } from "./Mover.js";
-import { FarmerGoal, LocalChacterInfo } from "./Types.js";
+import { CustomCharacter, FarmerGoal } from "./Types.js";
 import { getItemPosition, getItemQuantity } from "./Utils/Functions.js";
 import { Bank } from "./Bank.js";
 import { MerchantTaskController } from "./MerchantTasks.js";
@@ -237,7 +236,6 @@ export class MerchantCharacter extends BaseCharacter {
     "beewings", "crabclaw", "gslime", "gem0", "seashell", "stinger", "hpbelt",
     "ringsj", "hpamulet", "wcap", "wshoes", "intscroll"
   ];
-  characterInfo: {[name: string]: LocalChacterInfo} = {};
   updateTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
@@ -312,7 +310,7 @@ export class MerchantCharacter extends BaseCharacter {
     }
   }
 
-  needFarmerRun(): boolean {
+  /* needFarmerRun(): boolean {
     var go = false;
     for (var name in this.characterInfo) {
       let char = this.characterInfo[name];
@@ -322,14 +320,15 @@ export class MerchantCharacter extends BaseCharacter {
       if (getItemQuantity("mpot0", char.items, char.isize) < 100) go = true;
     }
     return go;
-  }
+  } */
 
-  getTakableItems(char: LocalChacterInfo): [number, number][] {
+  getTakableItems(char: CustomCharacter): [number, number][] {
     var items: [number, number][] = [];
     let save = ["hpot0", "mpot0"];
-    for (let i = 0; i < char.isize; i++) {
-      if (char.items[i] && !save.includes(char.items[i].name))
-        items.push([i, char.items[i].q || 1]);
+    for (let i = 0; i < char.ch.isize; i++) {
+      let item = char.ch.items[i];
+      if (item && !save.includes(item.name))
+        items.push([i, item.q || 1]);
     }
     return items;
   }

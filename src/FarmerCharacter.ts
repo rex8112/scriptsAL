@@ -1,9 +1,8 @@
-import { EventData, EventLocation, FarmerGoal } from "./Types.js";
+import { FarmerGoal } from "./Types.js";
 import { Vector } from "./Utils/Vector.js";
 import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
 import { sleep } from "./Utils/Functions.js";
-import GameEvent from "./GameEvents.js";
 import AL, { Character, ChestLootData, ChestOpenedData, DeathData, Entity, IPosition, MonsterName, Player } from "alclient";
 import { GameController } from "./Controllers.js";
 import { EventEmitter } from "events";
@@ -16,7 +15,6 @@ export class FarmerCharacter extends BaseCharacter {
   defaultType: MonsterName = "crabx";
   currentType: MonsterName = this.defaultType;
   goals: FarmerGoal[] = [];
-  event?: EventData;
   target?: Entity;
   gettingUnstuck: boolean = false;
 

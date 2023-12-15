@@ -1,5 +1,5 @@
-import AL, { GItem, ItemName, MapName, MonsterName } from "alclient";
-import { MoverDestination } from "./Mover.js";
+import AL, { GItem, IPosition, ItemName, MapName, MonsterName } from "alclient";
+import Location from "./Utils/Location";
 
 export interface UpgradeInstructions {
   /** Highest x to keep. */
@@ -27,7 +27,7 @@ export interface CompoundInstructions {
 
 export interface VendorInstructions {
   /** Where this item can be bought. */
-  buyLocation: MoverDestination;
+  buyLocation: IPosition | string;
   /** Whether or not to allow buying this item. */
   buy: boolean;
   /** Whether or not to allow vendor selling this item. */

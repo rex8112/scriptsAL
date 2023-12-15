@@ -1,12 +1,6 @@
 import { IPosition, PositionReal } from "alclient";
 import { FarmerCharacter } from "./FarmerCharacter.js";
 
-export function isSmartMoveToDestination(destination: any): destination is SmartMoveToDestination {
-  if (typeof destination == "string") return true;
-  if (destination.x != undefined) return true;
-  return false;
-}
-
 export function isIPosition(pos: any): pos is IPosition {
   if (pos.x != undefined) {
     let keys = Object.keys(pos);

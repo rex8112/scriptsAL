@@ -64,7 +64,7 @@ export abstract class DefaultTask extends Task {
 export abstract class BackgroundTask extends Task {
   cancellable: boolean = true;
   background = true;
-  timer: NodeJS.Timer | null = null;
+  timer: NodeJS.Timeout | null = null;
   abstract msinterval: number;
 
   async run() {
