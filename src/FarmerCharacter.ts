@@ -4,8 +4,10 @@ import Location from "./Utils/Location.js";
 import { BaseCharacter } from "./Character.js";
 import { sleep } from "./Utils/Functions.js";
 import GameEvent from "./GameEvents.js";
-import AL, { Character, DeathData, Entity, IPosition, MonsterName, Player } from "alclient";
+import AL, { Character, ChestLootData, ChestOpenedData, DeathData, Entity, IPosition, MonsterName, Player } from "alclient";
 import { GameController } from "./Controllers.js";
+import { EventEmitter } from "events";
+import { CharacterEvents } from "./EventEmitters.js";
 
 
 export class FarmerCharacter extends BaseCharacter {
@@ -18,12 +20,16 @@ export class FarmerCharacter extends BaseCharacter {
   target?: Entity;
   gettingUnstuck: boolean = false;
 
+  events = new CharacterEvents();
+
   supportInterval?: NodeJS.Timer;
+  #attacking: boolean = false;
   #kiting: boolean = false;
 
   constructor(gc: GameController, ch: Character) {
     super(gc, ch);
     this.ch.socket.on("death", (data) => { this.onDeath(data); })
+    this.ch.socket.on("chest_opened", (data) => { this.onLoot(data); });
     //ch.on("loot", (data) => { this.onLoot(data); });
     //game.on("event", (data) => { this.onEvent(data); });
   }
@@ -38,13 +44,30 @@ export class FarmerCharacter extends BaseCharacter {
 
   async run() {}
 
-  async attack(target: Entity) {
-    console.log(this.name, "Preparing to attack", target.id);
+  startAttack() {
+    if (!this.#attacking) {
+      this.#attacking = true;
+      this.runAttack();
+    }
+  }
+
+  stopAttack() {
+    this.#attacking = false;
+  }
+
+  async runAttack() {
+    if (this.#attacking) {
+      await this.attack();
+      setTimeout(() => this.runAttack(), 250);
+    }
+  }
+
+  async attack() {
+    let target = this.target;
+    if (!target) return;
     try {
       if (!this.ch.isOnCooldown("attack") && Vector.fromPosition(this.ch).distanceFromSqr(Vector.fromPosition(target)) <= (this.ch.range * this.ch.range)) {
-        console.log(`Attacking ${target.id}`);
         await this.ch.basicAttack(target.id);
-        console.log(`Finished Attacking`)
       }
     } catch (e) {
       console.error("Error in attack: ", e);
@@ -58,8 +81,11 @@ export class FarmerCharacter extends BaseCharacter {
     }
   }
 
-  stopKite() {
+  async stopKite() {
     this.#kiting = false;
+    do {
+      await sleep(250);
+    } while (this.gettingUnstuck || this.ch.moving);
   }
 
   async runKite() {
@@ -70,75 +96,120 @@ export class FarmerCharacter extends BaseCharacter {
   }
 
   async kite() {
-    if (this.gettingUnstuck) return;
+    if (this.gettingUnstuck || !this.#kiting) return;
     let target = this.target;
     let pos = Vector.fromPosition(this.ch);
     let lpos: IPosition;
+    let move = false;
 
     let entities = this.ch.getEntities();
     let players = this.ch.getPlayers();
     let both: (Player | Entity)[] = new Array().concat(entities, players);
     for (let id in both) {
       let entity = both[id];
-      let entityPos = Vector.fromPosition(entity);
-      let distanceToBe;
-      if (this.ch.range > entity.range) {
-        distanceToBe = (this.ch.range + entity.range) / 2;
+      if (entity.id !== target?.id) {
+        pos = this.moveKitePoint(pos, entity);
+      }
+    }
+
+    if (target) pos = this.moveKitePoint(pos, target);
+
+    if (!pos.isEqual(Vector.fromPosition(this.ch))) move = true;
+
+    if (move && this.#kiting) {
+      await this.kiteMove(pos);
+    }
+  }
+
+  async kiteMove(point: Vector) {
+    let lpos = Location.fromPosition({...point, map: this.ch.map}).asPosition()
+  
+      if (AL.Pathfinder.canWalkPath(this.ch, lpos)) {
+        this.ch.move(lpos.x, lpos.y).catch((e) => console.error("Error in Kite Movement"));
+  
+      } else if (AL.Pathfinder.canStand(lpos)) {
+        this.gettingUnstuck = true;
+        try {
+          await this.move(lpos);
+        } finally {
+          this.gettingUnstuck = false;
+        }
       } else {
-        distanceToBe = this.ch.range - 10;
+        this.ch.move(lpos.x+(100 * Math.random() - 50), lpos.y+(100 * Math.random() - 50))
+          .catch((e) => {console.error("How??", e)});
+      }
+  }
+
+  moveKitePoint(point: Vector, entity: Entity | Player): Vector {
+    let target = this.target;
+    let entityPos = Vector.fromPosition(entity);
+    let distanceToBe;
+    let distanceCapSqr = Math.pow(this.ch.range - 10, 2);
+    if (this.name == entity.name) {
+      return point;
+    } else if ("ctype" in entity) {
+      distanceToBe = 30;
+    } else if (this.ch.range > entity.range) {
+      distanceToBe = (this.ch.range + entity.range) / 2;
+    } else {
+      distanceToBe = this.ch.range - 10;
+    }
+    
+    let movePoint = false;
+    let squared = distanceToBe * distanceToBe;
+    let distanceSquared = entityPos.distanceFromSqr(point);
+    if (entity.id == target?.id) {
+      if (distanceCapSqr <= distanceSquared || distanceSquared <= squared)
+        movePoint = true;
+    } else {
+      if (distanceSquared < squared)
+        movePoint = true;
+    }
+
+    if (movePoint) {
+      if (entityPos.isEqual(point) && target) {
+        let targetPos = Vector.fromPosition(target);
+        let u = targetPos.vectorTowards(point);
+        if (Math.random() >= 0.5 ? 1 : -1) {
+          u = u.perpendicular();
+        } else {
+          u = u.perpendicular(true);
+        }
+        let d = u.multiply(distanceToBe);
+        point = point.addVector(d);
       }
       
-      let move = false;
-      let squared = distanceToBe * distanceToBe;
-      let distanceSquared = entityPos.distanceFromSqr(pos);
       if (entity.id == target?.id) {
-        if (distanceSquared !== squared)
-          move = true;
-      } else {
-        if (distanceSquared < squared)
-          move = true;
+        point = this.rotateUntilClear(point, Vector.fromEntity(target), distanceToBe);
       }
-
-      if (move) {
-        if (entityPos.isEqual(pos) && target) {
-          let targetPos = Vector.fromPosition(target);
-          let u = targetPos.vectorTowards(pos);
-          if (Math.random() >= 0.5 ? 1 : -1) {
-            u = u.perpendicular();
-          } else {
-            u = u.perpendicular(true);
-          }
-          let d = u.multiply(distanceToBe);
-          pos = pos.addVector(d);
-        }
-        
-        if ("ctype" in entity) {
-          pos = entityPos.pointTowards(pos, 30);
-        } else {
-          pos = entityPos.pointTowards(pos, distanceToBe);
-        }
-      }
+      return entityPos.pointTowards(point, distanceToBe);
     }
+    return point;
+  }
 
-    lpos = Location.fromPosition({...pos, map: this.ch.map}).asPosition()
-
-    if (AL.Pathfinder.canWalkPath(this.ch, lpos)) {
-      this.ch.move(lpos.x, lpos.y).catch((e) => console.error("Error in Kite Movement"));
-
-    } else if(AL.Pathfinder.canStand(lpos)) {
-      this.gettingUnstuck = true;
-      try {
-        await this.move(lpos);
-      } finally {
-        this.gettingUnstuck = false;
-      }
-    } else {
-      this.ch.move(lpos.x+(100 * Math.random() - 50), lpos.y+(100 * Math.random() - 50))
-        .catch((e) => {console.error(e)});
+  rotateUntilClear(point: Vector, target: Vector, distance: number): Vector {
+    let newPoint = point;
+    let tries = 0;
+    while (!AL.Pathfinder.canStand(new Location(newPoint, this.ch.map).asPosition()) && tries < 100) {
+      let direction = newPoint.vectorTowards(target);
+      let perp = direction.perpendicular();
+      let length = perp.multiply(20);
+      let moved = newPoint.addVector(length);
+      newPoint = target.pointTowards(moved, distance);
+      tries++;
     }
+    return newPoint;
   }
 
   onDeath(data: DeathData) {
     this.game.farmerController.onDeath(data);
+    if (data.id == this.target?.id) this.target = undefined;
+  }
+
+  onLoot(data: ChestOpenedData) {
+    if ("gone" in data) return;
+    if (data.opener == this.name) {
+      this.events.emit("onLoot", data);
+    }
   }
 }

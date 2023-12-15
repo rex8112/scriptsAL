@@ -8,6 +8,7 @@ async function run() {
 
   let gc = new GameController();
   console.log("Setting Up GameController");
+  gc.addFarmerGoal("cscale", 1);
   await gc.setup();
 }
 

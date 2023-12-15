@@ -1,6 +1,6 @@
-import AL, { DeathData, Entity, IPosition, ItemName, MonsterName, Player } from "alclient";
+import AL, { ChestLootData, DeathData, Entity, IPosition, ItemName, MonsterName, Player } from "alclient";
 import { MerchantCharacter } from "./Character.js";
-import { FarmerCharacter, PriestCharacter } from "./FarmerCharacter.js";
+import { FarmerCharacter } from "./FarmerCharacter.js";
 import { CustomCharacter, FarmerGoal, FarmingCharacter } from "./Types.js";
 import { Bank } from "./Bank.js";
 import { Items } from "./Items.js";
@@ -35,7 +35,25 @@ export class GameController {
     this.farmerController.run();
   }
 
-
+  async addFarmerGoal(item: ItemName, quantity: number) {
+    let mobs: [name: MonsterName, rate: number][] = [];
+    for (let mname in AL.Game.G.drops.monsters) {
+      let drops = AL.Game.G.drops.monsters[<MonsterName>mname];
+      if (!drops) continue;
+      for (let drop of drops) {
+        let [rate, iname] = drop;
+        if (iname === item) {
+          mobs.push([<MonsterName>mname, rate]);
+        }
+      }
+    }
+    if (mobs.length <= 0) return false;
+    mobs.sort((a, b) => { return b[1] - a[1]; });
+    let chosen = mobs[0];
+    let goal: FarmerGoal = {name: chosen[0], for: {name: item, amount: quantity}, issued: Date.now()};
+    // TODO: Finish Implementation
+    this.farmerController.goals.push(goal);
+  }
 }
 
 export class MerchantController {
@@ -115,25 +133,6 @@ export class MerchantController {
       await this.bank.depositGold(this.merchant, this.merchant.ch.gold - 2_000_000);
     }
   }
-
-  async addFarmerGoal(item: ItemName, quantity: number) {
-    let mobs: [name: MonsterName, rate: number][] = [];
-    for (let mname in AL.Game.G.drops.monsters) {
-      let drops = AL.Game.G.drops.monsters[<MonsterName>mname];
-      if (!drops) continue;
-      for (let drop of drops) {
-        let [rate, iname] = drop;
-        if (iname === item) {
-          mobs.push([<MonsterName>mname, rate]);
-        }
-      }
-    }
-    if (mobs.length <= 0) return false;
-    mobs.sort((a, b) => { return b[1] - a[1]; });
-    let chosen = mobs[0];
-    let goal: FarmerGoal = {name: chosen[0], for: {name: item, amount: quantity}, issued: Date.now()};
-    // TODO: Finish Implementation
-  }
 }
 
 export class FarmerController {
@@ -141,13 +140,38 @@ export class FarmerController {
   goals: FarmerGoal[] = [];
   default: MonsterName = "crabx";
   
+  farmers: FarmerCharacter[] = [];
   fighting: FarmerCharacter[] = [];
   targets: Entity[] = [];
 
   #canceling: boolean = false;
 
+  boundOnLoot = (data: ChestLootData) => { this.onLoot(data); };
+
   constructor(gc: GameController) {
     this.game = gc;
+  }
+
+  addFarmer(farmer: FarmerCharacter) {
+    this.farmers.push(farmer);
+    this.fighting.push(farmer);
+    farmer.startKite();
+    farmer.startAttack();
+    farmer.events.on("onLoot", this.boundOnLoot );
+  }
+
+  removeFarmer(farmer: FarmerCharacter) {
+    let index = this.farmers.indexOf(farmer);
+    let findex = this.fighting.indexOf(farmer);
+
+    if (index == -1) return;
+
+    this.farmers.splice(index, 1);
+    if (findex != -1) this.fighting.splice(index, 1);
+
+    farmer.stopKite();
+    farmer.stopAttack();
+    farmer.events.off("onLoot", this.boundOnLoot );
   }
 
   async run() {
@@ -180,11 +204,16 @@ export class FarmerController {
         }
         let moves = [];
         for (let name in farmers) {
-          let farmer = farmers[name];
-          moves.push(farmer.move(location[0]));
+          let farmer: FarmerCharacter = farmers[name];
+          await farmer.stopKite();
+          moves.push(farmer.move(location[0]).catch((e)=>console.error("Error in find move", e)).finally(()=>farmer.startKite()));
         }
         
-        await Promise.all(moves);
+        try {
+          await Promise.all(moves);
+        } catch (error) {
+          console.error("Error in move", error);
+        }
         monster = this.find_target(target);
         if (!monster) {
           throw new Error(`${leader.name} couldn't find monster of type ${target}`);
@@ -213,15 +242,23 @@ export class FarmerController {
       let farmer = this.fighting[i];
       let target = farmer.getEntity(this.targets[0].id);
       if (target == null) {
+        console.log("Could not find monster", farmer.name);
         to_move.push(farmer);
       } else {
-        let attack_pos = this.get_attack_position(farmer, target).asPosition();
-        if (AL.Pathfinder.canWalkPath(farmer.ch, attack_pos)) {
-          farmer.ch.move(attack_pos.x, attack_pos.y, { resolveOnStart: true });
-        } else {
+        let range = farmer.ch.range * farmer.ch.range;
+        let distance = farmer.Position.vector.distanceFromSqr(Vector.fromEntity(target));
+        if (distance > range && !AL.Pathfinder.canWalkPath(farmer.ch, target) && !farmer.gettingUnstuck) {
+          console.log("Can not move to monster", farmer.name);
           to_move.push(farmer);
         }
       }
+    }
+
+    if (to_move.length >= this.fighting.length) {
+      this.targets.length = 0;
+      this.fighting.length = 0;
+      this.fighting = new Array(...this.farmers);
+      return;
     }
 
     for (let i in to_move) {
@@ -229,14 +266,12 @@ export class FarmerController {
       console.log("Removing Distant Character", farmer.name);
       let index = this.fighting.indexOf(farmer);
       this.fighting.splice(index, 1);
-      farmer.stopKite();
+      await farmer.stopKite();
     }
 
-    let promises = [];
     for (let i in this.fighting) {
       let farmer = this.fighting[i];
       farmer.target = this.targets[0];
-      promises.push(farmer.attack(this.targets[0]));
     }
 
     for (let i in to_move) {
@@ -244,14 +279,14 @@ export class FarmerController {
       let target = this.fighting[0];
 
       console.log("Moving Distant Character", farmer.name);
-      farmer.move(target.ch).then((pos) => {
+      farmer.move(target.ch)
+      .catch((error) => console.error("Error in Distant Move", error))
+      .finally(() => {
         this.fighting.push(farmer);
         farmer.startKite();
         console.log("Character arrived", farmer.name);
       });
     }
-
-    await Promise.all(promises);
   }
 
   get_attack_position(fighter: CustomCharacter, target: Entity | Player): Location {
@@ -285,17 +320,14 @@ export class FarmerController {
     return Promise.all(moves);
   }
 
-  /* onLoot(loot) {
+  onLoot(loot: ChestLootData) {
     let toRemove: number[] = [];
     for (let i = 0; i < this.goals.length; i++) {
       let goal = this.goals[i];
-      if (goal.name !== this.currentType) continue;
 
       let f = goal.for
       if (f.name === "gold") {
         f.amount -= loot.gold;
-      } else if (f.name === "kills") {
-        f.amount -= 1;
       } else if (loot.items) {
         let items = loot.items.filter(i => { return i.name === f.name; });
         if (!items) continue;
@@ -314,7 +346,7 @@ export class FarmerController {
         this.goals.splice(i, 1);
       }
     }
-  } */
+  }
 
   find_target(monType: MonsterName, noTarget: boolean = true): Entity | null {
     let farmers = this.getFarmers();
@@ -418,6 +450,7 @@ export class CharacterController {
   selectedCharacters: string[] = ["Dezchant", "Dezara", "Deziest", "Dezanger"];
   constructor(gc: GameController) {
     this.game = gc;
+    //setInterval(() => { this.checkParty(); }, 1_000);
 
     for (let name in AL.Game.characters) {
       this.characterNames.push(name);
@@ -433,6 +466,22 @@ export class CharacterController {
     return null;
   }
 
+  async checkParty() {
+    let merchant = this.Merchant;
+    if (!merchant) return;
+
+    for (let name in this.characters) {
+      let char = this.characters[name];
+      if (!char.ch.ready || !merchant.ch.ready) continue;
+
+      if (!merchant.ch.party && char.ch.party) await char.ch.leaveParty();
+
+      if (!char.ch.party) {
+        merchant.ch.sendPartyInvite(char.ch.id).then(() => { if (merchant) char.ch.acceptPartyInvite(merchant.ch.id); });
+      }
+    }
+  }
+
   async deploy() {
     for (let name of this.selectedCharacters) {
       let c;
@@ -443,20 +492,17 @@ export class CharacterController {
         let c = await AL.Game.startMage(name, "US", "I");
         let fc = new FarmerCharacter(this.game, c);
         this.characters[name] = fc;
-        this.game.farmerController.fighting.push(fc);
-        fc.startKite();
+        this.game.farmerController.addFarmer(fc);
       } else if (AL.Game.characters[name]?.type === "ranger") {
         let c = await AL.Game.startRanger(name, "US", "I");
         let fc = new FarmerCharacter(this.game, c);
         this.characters[name] = fc;
-        this.game.farmerController.fighting.push(fc);
-        fc.startKite();
+        this.game.farmerController.addFarmer(fc);
       } else if (AL.Game.characters[name]?.type === "priest") {
         let c = await AL.Game.startPriest(name, "US", "I");
         let fc = new FarmerCharacter(this.game, c);
         this.characters[name] = fc;
-        this.game.farmerController.fighting.push(fc);
-        fc.startKite();
+        this.game.farmerController.addFarmer(fc);
       } else {
         throw new Error(`Class type not supported for character: ${name}`);
       }
