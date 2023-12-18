@@ -5,18 +5,22 @@ import { CustomCharacter, FarmerGoal, FarmingCharacter } from "./Types.js";
 import { Bank } from "./Bank.js";
 import { Items } from "./Items.js";
 import { Vector } from "./Utils/Vector.js";
-import { sleep } from "./Utils/Functions.js";
+import { getFreeSlots, getItemQuantity, sleep } from "./Utils/Functions.js";
 import Location from "./Utils/Location.js";
+import { MerchantTaskController } from "./MerchantTasks.js";
+import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers.js";
 
 export class GameController {
   loaded: boolean = false;
   bank: Bank;
   characterController: CharacterController;
   farmerController: FarmerController;
+  merchantController: MerchantController;
   constructor() {
     this.bank = new Bank();
     this.characterController = new CharacterController(this);
     this.farmerController = new FarmerController(this);
+    this.merchantController = new MerchantController(this);
   }
 
   get characters() {
@@ -32,6 +36,7 @@ export class GameController {
 
     await sleep(5000);
 
+    this.characterController.run();
     this.farmerController.run();
   }
 
@@ -59,20 +64,25 @@ export class GameController {
 export class MerchantController {
   game: GameController;
   bank: Bank;
-  merchant: MerchantCharacter;
   #canceling: boolean = false;
+  tasks: MerchantTaskController;
 
-  constructor(gc: GameController, merchant: MerchantCharacter) {
+  constructor(gc: GameController) {
     this.game = gc;
     this.bank = gc.bank;
-    this.merchant = merchant;
+    this.tasks = new MerchantTaskController(this)
+    this.tasks.run();
+  }
+
+  get merchant(): MerchantCharacter | null {
+    return this.game.characterController.Merchant;
   }
 
   async run() {
     try {
       await this.loop();
     } catch (e) {
-      console.error("Error in Farmer Controller: ", e);
+      console.error("Error in Merchant Controller: ", e);
     }
     if (this.#canceling === false) {
       setTimeout(() => { this.run(); }, 250);
@@ -90,12 +100,18 @@ export class MerchantController {
     
   }
 
+  replenishFarmers() {
+    this.tasks.enqueueTask(new ReplenishFarmersTask(this));
+  }
+
   async cleanInventory() {
+    let merchant = this.merchant
+    if (!merchant) return;
     let keep = ["hpot0", "mpot0", "stand0"]
     let pos: number[] = [];
     let sellPos: [number, number][] = [];
-    for (let i in this.merchant.ch.items) {
-      let item = this.merchant.ch.items[i];
+    for (let i in merchant.ch.items) {
+      let item = merchant.ch.items[i];
       if (item && !keep.includes(item.name)) {
         let quantity = item.q ?? 1;
         let data = Items[item.name];
@@ -117,20 +133,20 @@ export class MerchantController {
 
     console.log(sellPos);
     if (sellPos.length > 0) {
-      await this.merchant.move("market");
+      await merchant.move("market");
       for (let pos of sellPos) {
         try {
-          await this.merchant.ch.sell(pos[0], pos[1]);
+          await merchant.ch.sell(pos[0], pos[1]);
         } catch {
           console.error("Item not present.");
         }
       }
     }
 
-    await this.bank.storeItems(this.merchant, pos);
+    await this.bank.storeItems(merchant, pos);
 
-    if (this.merchant.ch.gold > 2_000_000) {
-      await this.bank.depositGold(this.merchant, this.merchant.ch.gold - 2_000_000);
+    if (merchant.ch.gold > 2_000_000) {
+      await this.bank.depositGold(merchant, merchant.ch.gold - 2_000_000);
     }
   }
 }
@@ -228,6 +244,19 @@ export class FarmerController {
 
   async cancel() {
     this.#canceling = true;
+  }
+
+  inspectFarmers() {
+    let needMerchant = false;
+    for (let farmer of this.farmers) {
+      let hpots = farmer.getItemQuantity("hpot0");
+      let mpots = farmer.getItemQuantity("mpot0");
+      let free = farmer.getFreeSlots();
+
+      if (hpots < 100 || mpots < 100 || free.length < 5) needMerchant = true;
+    }
+
+    if (needMerchant) this.game.merchantController.replenishFarmers();
   }
 
   async party_find_target() {
@@ -450,7 +479,6 @@ export class CharacterController {
   selectedCharacters: string[] = ["Dezchant", "Dezara", "Deziest", "Dezanger"];
   constructor(gc: GameController) {
     this.game = gc;
-    //setInterval(() => { this.checkParty(); }, 1_000);
 
     for (let name in AL.Game.characters) {
       this.characterNames.push(name);
@@ -466,6 +494,10 @@ export class CharacterController {
     return null;
   }
 
+  run() {
+    setInterval(() => { this.checkParty(); }, 1_000);
+  }
+
   async checkParty() {
     let merchant = this.Merchant;
     if (!merchant) return;
@@ -477,7 +509,7 @@ export class CharacterController {
       if (!merchant.ch.party && char.ch.party) await char.ch.leaveParty();
 
       if (!char.ch.party) {
-        merchant.ch.sendPartyInvite(char.ch.id).then(() => { if (merchant) char.ch.acceptPartyInvite(merchant.ch.id); });
+        merchant.ch.sendPartyInvite(char.ch.id).then(() => { if (merchant) char.ch.acceptPartyInvite(merchant.ch.id); console.log("Joined"); });
       }
     }
   }

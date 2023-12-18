@@ -1,7 +1,7 @@
 import AL, { Entity, ItemName, Mage, MapName, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
 import { Character, IPosition, ItemData } from "alclient";
 import { CustomCharacter, FarmerGoal } from "./Types.js";
-import { getItemPosition, getItemQuantity } from "./Utils/Functions.js";
+import { getFreeSlots, getItemPosition, getItemQuantity } from "./Utils/Functions.js";
 import { Bank } from "./Bank.js";
 import { MerchantTaskController } from "./MerchantTasks.js";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers.js";
@@ -95,6 +95,10 @@ export class BaseCharacter {
 
   getItemQuantity(name: ItemName) {
     return getItemQuantity(name, this.ch.items, this.ch.isize);
+  }
+
+  getFreeSlots() {
+    return getFreeSlots(this.ch.items, this.ch.isize);
   }
 
   /**
@@ -211,9 +215,9 @@ export class BaseCharacter {
     if (this.ch.isOnCooldown("use_hp")) {
       return new Promise((resolve) => {resolve("On Cooldown")});
     }
-    if (this.ch.hp < this.ch.max_hp / 2) 
+    if (this.ch.hp < this.ch.max_hp / 2 && heal) 
       return this.ch.useHPPot(heal)
-    else if (this.ch.mp < this.ch.max_mp-300)
+    else if (this.ch.mp < this.ch.max_mp-300 && mana)
       return this.ch.useMPPot(mana)
   }
 
@@ -239,14 +243,11 @@ export class MerchantCharacter extends BaseCharacter {
   updateTask: NodeJS.Timer | null = null;
   standTask: NodeJS.Timer | null = null;
   inspectMerchantTask: NodeJS.Timer | null = null;
-  taskController: MerchantTaskController;
   ch: Merchant;
 
   constructor(gc: GameController, ch: Merchant) {
     super(gc, ch);
     this.ch = ch;
-    this.taskController = new MerchantTaskController(this);
-    this.taskController.run();
   }
 
   startTasks() {

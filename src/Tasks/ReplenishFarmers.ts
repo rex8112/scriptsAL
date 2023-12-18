@@ -12,9 +12,9 @@ export class ReplenishFarmersTask extends Task {
   
   cancellable: boolean = true;
 
-  constructor(char: MerchantController) {
-    super(char);
-    this.mc = char;
+  constructor(mc: MerchantController) {
+    super(mc);
+    this.mc = mc;
   }
 
   initialize(id: number) {
@@ -26,19 +26,21 @@ export class ReplenishFarmersTask extends Task {
   }
 
   async getPotions(hpots: number, mpots: number): Promise<void> {
+    let merchant = this.mc.merchant;
+    if (!merchant) return;
     let bh = this.mc.bank.items["hpot0"]?.getTotal() || 0;
     let bm = this.mc.bank.items["mpot0"]?.getTotal() || 0;
 
-    let grabbedH = this.mc.merchant.getItemQuantity("hpot0");
-    let grabbedM = this.mc.merchant.getItemQuantity("mpot0");
+    let grabbedH = merchant.getItemQuantity("hpot0");
+    let grabbedM = merchant.getItemQuantity("mpot0");
 
     if (bh > 0) {
-      let newPositions = await this.mc.bank.items["hpot0"].getItem(this.mc.merchant, hpots);
-      newPositions.forEach((pos) => { grabbedH += <number>this.mc.merchant.ch.items[pos]?.q || 1 })
+      let newPositions = await this.mc.bank.items["hpot0"].getItem(merchant, hpots);
+      newPositions.forEach((pos) => { grabbedH += <number>merchant?.ch.items[pos]?.q || 1 })
     }
     if (bm > 0) {
-      let newPositions = await this.mc.bank.items["mpot0"].getItem(this.mc.merchant, mpots);
-      newPositions.forEach((pos) => { grabbedM += <number>this.mc.merchant.ch.items[pos]?.q || 1 })
+      let newPositions = await this.mc.bank.items["mpot0"].getItem(merchant, mpots);
+      newPositions.forEach((pos) => { grabbedM += <number>merchant?.ch.items[pos]?.q || 1 })
     }
     let buyList = [];
     if (grabbedH < hpots) {
@@ -47,7 +49,7 @@ export class ReplenishFarmersTask extends Task {
     if (grabbedM < mpots) {
       buyList.push(["mpot0", mpots - grabbedM]);
     }
-    await this.mc.merchant.bulk_buy([["hpot0", hpots - grabbedH], ["mpot0", mpots - grabbedM]])
+    await merchant.bulk_buy([["hpot0", hpots - grabbedH], ["mpot0", mpots - grabbedM]])
   }
 
   getTakableItems(character: BaseCharacter): [number, number][] {
@@ -63,7 +65,9 @@ export class ReplenishFarmersTask extends Task {
   }
 
   async run_task(): Promise<void> {
-    var farmers = this.mc.game.farmerController.getFarmers();
+    let farmers = this.mc.game.farmerController.farmers;
+    let merchant = this.mc.merchant;
+    if (!merchant) return;
 
     let potsNeeded: {[name: string]: [number, number]} = {};
 
@@ -79,25 +83,26 @@ export class ReplenishFarmersTask extends Task {
 
     await this.getPotions(totalHPots, totalMPots);
 
-    for (var name in farmers) {
-      var char = farmers[name];
+    for (let name in farmers) {
+      let char = farmers[name];
 
-      if (!await moveToCharacter(this.mc.merchant, char, char.name, 200)) continue;
+      if (!await moveToCharacter(merchant, char, char.name, 200)) continue;
       let promises = [];
-      let free = getFreeSlots(this.mc.merchant.ch.items, this.mc.merchant.ch.isize).length;
+      let free = getFreeSlots(merchant.ch.items, merchant.ch.isize).length;
       let items = this.getTakableItems(char).slice(0, free-2);
 
-      promises.push(char.ch.sendGold(this.mc.merchant.name, char.ch.gold));
+      promises.push(char.ch.sendGold(merchant.name, char.ch.gold));
       items.forEach((item) => {
-        promises.push(char.ch.sendItem(this.mc.merchant.name, item[0], item[1]));
+        if (!merchant) return;
+        promises.push(char.ch.sendItem(merchant.name, item[0], item[1]));
       });
 
-      let hpots = this.mc.merchant.getItemPosition("hpot0");
-      let mpots = this.mc.merchant.getItemPosition("mpot0");
+      let hpots = merchant.getItemPosition("hpot0");
+      let mpots = merchant.getItemPosition("mpot0");
       let [hneeded, mneeded] = potsNeeded[char.name];
 
-      if (hpots != null && hneeded > 0) await this.mc.merchant.ch.sendItem(name, hpots, hneeded);
-      if (mpots != null && mneeded > 0) await this.mc.merchant.ch.sendItem(name, mpots, mneeded);
+      if (hpots != null && hneeded > 0) await merchant.ch.sendItem(name, hpots, hneeded);
+      if (mpots != null && mneeded > 0) await merchant.ch.sendItem(name, mpots, mneeded);
 
       await Promise.all(promises);
     }

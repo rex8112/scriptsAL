@@ -12,8 +12,8 @@ export abstract class Task {
   _priority: number = 0;
   background: boolean = false;
 
-  constructor(char: MerchantController) {
-    this.mc = char
+  constructor(mc: MerchantController) {
+    this.mc = mc
   }
 
   async run(): Promise<void> {
@@ -83,7 +83,7 @@ export abstract class BackgroundTask extends Task {
 }
 
 export class MerchantTaskController {
-  char: MerchantCharacter;
+  mc: MerchantController;
   tasks: {[id: number]: Task};
   running: boolean = false;
   backgroundTasks: {[id: number]: Task};
@@ -91,11 +91,15 @@ export class MerchantTaskController {
   idCount = 1;
   _pause = false;
 
-  constructor(char: MerchantCharacter) {
-    this.char = char;
+  constructor(mc: MerchantController) {
+    this.mc = mc;
     this.tasks = {};
     this.backgroundTasks = {};
     this.defaultTask = null;
+  }
+
+  get char() {
+    return this.mc.merchant;
   }
 
   async run(): Promise<void> {
@@ -110,9 +114,9 @@ export class MerchantTaskController {
       this.running = true;
       console.log("Running task", task_to_run.displayName);
       try {
-        await this.char.ch.closeMerchantStand();
+        await this.char?.ch.closeMerchantStand();
         await task_to_run.run();
-        await this.char.ch.openMerchantStand();
+        await this.char?.ch.openMerchantStand();
       } catch (error) {
         console.error(`Error in ${task_to_run.name}`, error);
       }
