@@ -115,18 +115,20 @@ export class UpgradeItems extends Task {
   }
 
   async run_task(): Promise<void> {
+    let merchant = this.mc.merchant;
+    if (!merchant) return;
     var normalAttempts = 0;
     var highAttempts = 0;
     var toUpgrade: [getTo: number, invPositions: number[]][] = [];
 
     for (let [getTo, positions] of this.items) {
-      if (getFreeSlots(this.mc.merchant.ch.items, this.mc.merchant.ch.isize).length - 2 >= positions.length) {
-        let invPositions = await this.mc.bank.getItemFromPositions(this.mc.merchant, positions);
+      if (merchant.getFreeSlots().length - 2 >= positions.length) {
+        let invPositions = await this.mc.bank.getItemFromPositions(merchant, positions);
         toUpgrade.push([getTo, invPositions]);
 
         // To determine quantity of scrolls to buy.
         for (let i of invPositions) {
-          let item = this.mc.merchant.ch.items[i];
+          let item = merchant.ch.items[i];
           if (!item) continue;
           let data = Items[item.name];
           let meta = AL.Game.G.items[item.name];
@@ -147,33 +149,33 @@ export class UpgradeItems extends Task {
     var grabbed0, grabbed1;
     var grabbedPos0, grabbedPos1;
     if (normalAttempts > 0)
-      grabbed0 = await this.mc.bank.items["scroll0"]?.getItem(this.mc.merchant, normalAttempts);
+      grabbed0 = await this.mc.bank.items["scroll0"]?.getItem(merchant, normalAttempts);
     if (highAttempts > 0)
-      grabbed1 = await this.mc.bank.items["scroll1"]?.getItem(this.mc.merchant, highAttempts);
+      grabbed1 = await this.mc.bank.items["scroll1"]?.getItem(merchant, highAttempts);
     if (grabbed0) {
-      let item = this.mc.merchant.ch.items[grabbed0[0]];
+      let item = merchant.ch.items[grabbed0[0]];
       if (item && item.q) normalAttempts -= item.q;
       grabbedPos0 = grabbed0[0];
     }
     if (grabbed1) {
-      let item = this.mc.merchant.ch.items[grabbed1[0]];
+      let item = merchant.ch.items[grabbed1[0]];
       if (item && item.q) highAttempts -= item.q;
       grabbedPos1 = grabbed1[0];
     }
 
     // Buy remainder
-    await this.mc.merchant.bulk_buy([["scroll0", normalAttempts], ["scroll1", highAttempts]]);
-    let scroll0 = getItemPosition("scroll0", this.mc.merchant.ch.items, this.mc.merchant.ch.isize);
-    let scroll1 = getItemPosition("scroll1", this.mc.merchant.ch.items, this.mc.merchant.ch.isize);
+    await merchant.bulk_buy([["scroll0", normalAttempts], ["scroll1", highAttempts]]);
+    let scroll0 = getItemPosition("scroll0", merchant.ch.items, merchant.ch.isize);
+    let scroll1 = getItemPosition("scroll1", merchant.ch.items, merchant.ch.isize);
 
     // Begin upgrading
     console.log("Upgrading");
-    await this.mc.merchant.move("market");
+    await merchant.move({x: 30, y: -40, map: "main"});
 
     let returnItems = [];
     for (let [getTo, positions] of toUpgrade) {
       for (let pos of positions) {
-        let item = this.mc.merchant.ch.items[pos];
+        let item = merchant.ch.items[pos];
         if (!item) continue;
         let meta = AL.Game.G.items[item.name];
         if (item.level === undefined || meta.grades === undefined) continue;
@@ -181,7 +183,7 @@ export class UpgradeItems extends Task {
         let result;
         for (let i = item.level; i < getTo; i++) {
           let scrollPos;
-          let level = <number>this.mc.merchant.ch.items[pos]?.level;
+          let level = <number>merchant.ch.items[pos]?.level;
           console.log("Item Level: ", item.level);
           if (level < meta.grades[0]) {
             scrollPos = <number>scroll0;
@@ -189,7 +191,7 @@ export class UpgradeItems extends Task {
             scrollPos = <number>scroll1;
           } else continue;
           
-          result = await this.mc.merchant.ch.upgrade(pos, scrollPos);
+          result = await merchant.ch.upgrade(pos, scrollPos);
           if (result !== true) break;
         }
         if (result === true)
@@ -197,10 +199,10 @@ export class UpgradeItems extends Task {
       }
     }
 
-    if (scroll0 !== null && this.mc.merchant.ch.items[scroll0]) returnItems.push(scroll0);
-    if (scroll1 !== null && this.mc.merchant.ch.items[scroll1]) returnItems.push(scroll1);
+    if (scroll0 !== null && merchant.ch.items[scroll0]) returnItems.push(scroll0);
+    if (scroll1 !== null && merchant.ch.items[scroll1]) returnItems.push(scroll1);
 
     if (returnItems.length > 0)
-      await this.mc.merchant.storeItems(returnItems);
+      await merchant.storeItems(returnItems);
   }
 }

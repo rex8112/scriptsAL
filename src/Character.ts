@@ -1,4 +1,4 @@
-import AL, { Entity, ItemName, Mage, MapName, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
+import AL, { Entity, ItemName, LimitDCReportData, Mage, MapName, Merchant, MonsterName, Player, PullMerchantsCharData, TradeSlotType } from "alclient";
 import { Character, IPosition, ItemData } from "alclient";
 import { CustomCharacter, FarmerGoal } from "./Types.js";
 import { getFreeSlots, getItemPosition, getItemQuantity } from "./Utils/Functions.js";
@@ -28,6 +28,7 @@ export class BaseCharacter {
     this.ch = ch;
     this.class = ch.ctype;
     this.name = ch.name;
+    this.registerEvents();
     //this.CM = new CharacterMessager(this);
     
   }
@@ -46,6 +47,23 @@ export class BaseCharacter {
 
   get map(): MapName {
     return this.ch.map;
+  }
+
+  logLimitDCReport(data: LimitDCReportData) {
+    console.debug(`=== START LIMITDCREPORT (${this.ch.id}) ===`)
+    console.debug(data)
+    console.debug(`=== END LIMITDCREPORT ${this.ch.id} ===`)
+  }
+
+  registerEvents() {
+    this.ch.socket.on("disconnect", (data) => {
+      console.error(this.name, "Disconnected!", data);
+    });
+    this.ch.socket.on("disconnect_reason", (data) => {
+      console.error(this.name, "Disconnected!", data);
+    });
+
+    this.ch.socket.on("limitdcreport", this.logLimitDCReport)
   }
 
   startTasks() {
@@ -215,9 +233,9 @@ export class BaseCharacter {
     if (this.ch.isOnCooldown("use_hp")) {
       return new Promise((resolve) => {resolve("On Cooldown")});
     }
-    if (this.ch.hp < this.ch.max_hp / 2 && heal) 
+    if (this.ch.hp < this.ch.max_hp / 2 && heal !== undefined) 
       return this.ch.useHPPot(heal)
-    else if (this.ch.mp < this.ch.max_mp-300 && mana)
+    else if (this.ch.mp < this.ch.max_mp-300 && mana !== undefined)
       return this.ch.useMPPot(mana)
   }
 

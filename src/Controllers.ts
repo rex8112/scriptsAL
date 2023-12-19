@@ -9,6 +9,8 @@ import { getFreeSlots, getItemQuantity, sleep } from "./Utils/Functions.js";
 import Location from "./Utils/Location.js";
 import { MerchantTaskController } from "./MerchantTasks.js";
 import { ReplenishFarmersTask } from "./Tasks/ReplenishFarmers.js";
+import { CheckCompound } from "./Tasks/CompoundItems.js";
+import { CheckUpgrade } from "./Tasks/UpgradeItems.js";
 
 export class GameController {
   loaded: boolean = false;
@@ -28,10 +30,13 @@ export class GameController {
   }
 
   async setup() {
-    await this.characterController.deploy();
+    await this.characterController.deployMerchant()
     let merch = this.characterController.Merchant;
     if (!merch) throw new Error("Merchant didn't start.")
+    await AL.Pathfinder.prepare(AL.Game.G);
     await this.bank.updateInfo(merch);
+    if (merch.getFreeSlots().length < 20) await this.merchantController.cleanInventory();
+    await this.characterController.deploy();
     this.loaded = true;
 
     await sleep(5000);
@@ -104,6 +109,14 @@ export class MerchantController {
     this.tasks.enqueueTask(new ReplenishFarmersTask(this));
   }
 
+  checkCompound() {
+    this.tasks.enqueueTask(new CheckCompound(this, this.tasks));
+  }
+
+  checkUpgrade() {
+    this.tasks.enqueueTask(new CheckUpgrade(this, this.tasks));
+  }
+
   async cleanInventory() {
     let merchant = this.merchant
     if (!merchant) return;
@@ -133,7 +146,7 @@ export class MerchantController {
 
     console.log(sellPos);
     if (sellPos.length > 0) {
-      await merchant.move("market");
+      await merchant.move({x: 30, y: -40, map: "main"});
       for (let pos of sellPos) {
         try {
           await merchant.ch.sell(pos[0], pos[1]);
@@ -204,8 +217,10 @@ export class FarmerController {
   }
 
   async loop() {
-    let farmers = this.getFarmers();
+    let farmers = this.farmers;
     let leader = Object.values(farmers)[0];
+
+    this.inspectFarmers();
 
     // Figure out what to have the Farmers do. (Cancel their current task if applicable.)
     let target = this.goals[0]?.name ?? this.default;
@@ -253,7 +268,7 @@ export class FarmerController {
       let mpots = farmer.getItemQuantity("mpot0");
       let free = farmer.getFreeSlots();
 
-      if (hpots < 100 || mpots < 100 || free.length < 5) needMerchant = true;
+      if (hpots < 100 || mpots < 100 || free.length < 30) needMerchant = true;
     }
 
     if (needMerchant) this.game.merchantController.replenishFarmers();
@@ -273,14 +288,14 @@ export class FarmerController {
       if (target == null) {
         console.log("Could not find monster", farmer.name);
         to_move.push(farmer);
-      } else {
+      } /* else {
         let range = farmer.ch.range * farmer.ch.range;
         let distance = farmer.Position.vector.distanceFromSqr(Vector.fromEntity(target));
         if (distance > range && !AL.Pathfinder.canWalkPath(farmer.ch, target) && !farmer.gettingUnstuck) {
           console.log("Can not move to monster", farmer.name);
           to_move.push(farmer);
         }
-      }
+      } */
     }
 
     if (to_move.length >= this.fighting.length) {
@@ -305,10 +320,10 @@ export class FarmerController {
 
     for (let i in to_move) {
       let farmer = to_move[i];
-      let target = this.fighting[0];
+      let target: Entity | FarmerCharacter = this.targets[0] ?? this.fighting[0];
 
       console.log("Moving Distant Character", farmer.name);
-      farmer.move(target.ch)
+      farmer.move(target)
       .catch((error) => console.error("Error in Distant Move", error))
       .finally(() => {
         this.fighting.push(farmer);
@@ -495,7 +510,7 @@ export class CharacterController {
   }
 
   run() {
-    setInterval(() => { this.checkParty(); }, 1_000);
+    //setInterval(() => { this.checkParty(); }, 1_000);
   }
 
   async checkParty() {
@@ -514,9 +529,21 @@ export class CharacterController {
     }
   }
 
+  async deployMerchant() {
+    for (let name of this.selectedCharacters) {
+      let c;
+      if (AL.Game.characters[name]?.type === "merchant") {
+        let c = await AL.Game.startMerchant(name, "US", "I");
+        this.characters[name] = new MerchantCharacter(this.game, c);
+        this.characters[name].startRun();
+      }
+    }
+  }
+
   async deploy() {
     for (let name of this.selectedCharacters) {
       let c;
+      if (this.characters[name]) continue;
       if (AL.Game.characters[name]?.type === "merchant") {
         let c = await AL.Game.startMerchant(name, "US", "I");
         this.characters[name] = new MerchantCharacter(this.game, c);

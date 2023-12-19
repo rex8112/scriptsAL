@@ -64,7 +64,7 @@ export class FarmerCharacter extends BaseCharacter {
     let target = this.target;
     if (!target) return;
     try {
-      if (!this.ch.isOnCooldown("attack") && Vector.fromPosition(this.ch).distanceFromSqr(Vector.fromPosition(target)) <= (this.ch.range * this.ch.range)) {
+      if (!this.ch.isOnCooldown("attack") && Vector.fromPosition(this.ch).distanceFromSqr(Vector.fromPosition(target)) <= (this.ch.range * this.ch.range) && this.ch.mp >= this.ch.mp_cost) {
         await this.ch.basicAttack(target.id);
       }
     } catch (e) {
@@ -97,6 +97,7 @@ export class FarmerCharacter extends BaseCharacter {
     if (this.gettingUnstuck || !this.#kiting) return;
     let target = this.target;
     let pos = Vector.fromPosition(this.ch);
+    if (Number.isNaN(pos.x)) return;
     let lpos: IPosition;
     let move = false;
 
@@ -123,7 +124,7 @@ export class FarmerCharacter extends BaseCharacter {
     let lpos = Location.fromPosition({...point, map: this.ch.map}).asPosition()
   
       if (AL.Pathfinder.canWalkPath(this.ch, lpos)) {
-        this.ch.move(lpos.x, lpos.y).catch((e) => console.error("Error in Kite Movement"));
+        this.ch.move(lpos.x, lpos.y, {resolveOnStart: true}).catch((e) => console.debug("Error in Kite Movement"));
   
       } else if (AL.Pathfinder.canStand(lpos)) {
         this.gettingUnstuck = true;
@@ -133,8 +134,8 @@ export class FarmerCharacter extends BaseCharacter {
           this.gettingUnstuck = false;
         }
       } else {
-        this.ch.move(lpos.x+(100 * Math.random() - 50), lpos.y+(100 * Math.random() - 50))
-          .catch((e) => {console.error("How??", e)});
+        this.ch.move(lpos.x+(100 * Math.random() - 50), lpos.y+(100 * Math.random() - 50), {resolveOnStart: true})
+          .catch((e) => {console.debug("How??", e)});
       }
   }
 
@@ -143,7 +144,7 @@ export class FarmerCharacter extends BaseCharacter {
     let entityPos = Vector.fromPosition(entity);
     let distanceToBe;
     let distanceCapSqr = Math.pow(this.ch.range - 10, 2);
-    if (this.name == entity.name) {
+    if (this.name === entity.name) {
       return point;
     } else if ("ctype" in entity) {
       distanceToBe = 30;
@@ -177,7 +178,7 @@ export class FarmerCharacter extends BaseCharacter {
         point = point.addVector(d);
       }
       
-      if (entity.id == target?.id) {
+      if (entity.id === target?.id) {
         point = this.rotateUntilClear(point, Vector.fromEntity(target), distanceToBe);
       }
       return entityPos.pointTowards(point, distanceToBe);
@@ -188,7 +189,7 @@ export class FarmerCharacter extends BaseCharacter {
   rotateUntilClear(point: Vector, target: Vector, distance: number): Vector {
     let newPoint = point;
     let tries = 0;
-    while (!AL.Pathfinder.canStand(new Location(newPoint, this.ch.map).asPosition()) && tries < 100) {
+    while (!AL.Pathfinder.canWalkPath(this.ch, new Location(newPoint, this.ch.map).asPosition()) && tries < 500) {
       let direction = newPoint.vectorTowards(target);
       let perp = direction.perpendicular();
       let length = perp.multiply(20);
@@ -201,12 +202,12 @@ export class FarmerCharacter extends BaseCharacter {
 
   onDeath(data: DeathData) {
     this.game.farmerController.onDeath(data);
-    if (data.id == this.target?.id) this.target = undefined;
+    if (data.id === this.target?.id) this.target = undefined;
   }
 
   onLoot(data: ChestOpenedData) {
     if ("gone" in data) return;
-    if (data.opener == this.name) {
+    if (data.opener === this.name) {
       this.events.emit("onLoot", data);
     }
   }

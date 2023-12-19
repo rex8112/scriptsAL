@@ -83,8 +83,9 @@ export class ReplenishFarmersTask extends Task {
 
     await this.getPotions(totalHPots, totalMPots);
 
-    for (let name in farmers) {
-      let char = farmers[name];
+    for (let i in farmers) {
+      let char = farmers[i];
+      let name = char.name;
 
       if (!await moveToCharacter(merchant, char, char.name, 200)) continue;
       let promises = [];
@@ -107,5 +108,7 @@ export class ReplenishFarmersTask extends Task {
       await Promise.all(promises);
     }
     await this.mc.cleanInventory();
+    this.mc.checkCompound();
+    this.mc.checkUpgrade();
   }
 }

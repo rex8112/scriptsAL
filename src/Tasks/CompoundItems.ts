@@ -101,12 +101,14 @@ export class CompoundItems extends Task {
   }
 
   async run_task(): Promise<void> {
+    let merchant = this.mc.merchant;
+    if (!merchant) return;
     let items: [number, number, number][] = [];
     let normalAttempts = 0;
     let highAttempts = 0;
     for (let pos of this.items) {
-      let result = await this.mc.bank.getItemFromPositions(this.mc.merchant, pos);
-      let item = this.mc.merchant.ch.items[result[0]];
+      let result = await this.mc.bank.getItemFromPositions(merchant, pos);
+      let item = merchant.ch.items[result[0]];
       if (!item) continue;
       let data = Items[item.name];
       let meta = AL.Game.G.items[item.name];
@@ -121,14 +123,14 @@ export class CompoundItems extends Task {
       items.push(<[number, number, number]>result);
     }
 
-    let [cscroll0, cscroll1] = await this.mc.merchant.bulk_buy([["cscroll0", normalAttempts], ["cscroll1", highAttempts]], true);
+    let [cscroll0, cscroll1] = await merchant.bulk_buy([["cscroll0", normalAttempts], ["cscroll1", highAttempts]], true);
     
-    await this.mc.merchant.move("market");
+    await merchant.move({x: 30, y: -40, map: "main"});
     console.log("Compounding");
     let returnItems = [];
     for (var i in items) {
       let pos = items[i];
-      let item = this.mc.merchant.ch.items[pos[0]];
+      let item = merchant.ch.items[pos[0]];
       if (!item) continue;
       let data = Items[item.name];
       let meta = AL.Game.G.items[item.name];
@@ -141,12 +143,12 @@ export class CompoundItems extends Task {
         scrollPos = cscroll1;
       else continue;
 
-      let result = await this.mc.merchant.ch.compound(pos[0], pos[1], pos[2], scrollPos);
+      let result = await merchant.ch.compound(pos[0], pos[1], pos[2], scrollPos);
       if (result) {
         returnItems.push(Math.min(...pos));
       }
     }
     if (returnItems.length > 0)
-      await this.mc.merchant.storeItems(returnItems);
+      await merchant.storeItems(returnItems);
   }
 }

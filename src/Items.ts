@@ -100,14 +100,14 @@ var GabrialVendorUpgradeInstructions: UpgradeInstructions = {
 }
 
 var GabrialVendorInstructions: VendorInstructions = {
-  buyLocation: "market",
+  buyLocation: {x: 30, y: -40, map: "main"},
   buy: true,
   sell: false,
   keep: 5
 }
 
 var LucasVendorInstructions: VendorInstructions = {
-  buyLocation: "market",
+  buyLocation: {x: 30, y: -40, map: "main"},
   buy: true,
   sell: false,
   keep: 1000
@@ -237,7 +237,7 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     vendor: {
-      buyLocation: "market",
+      buyLocation: {x: 30, y: -40, map: "main"},
       buy: false,
       sell: true,
       keep: 3
@@ -253,7 +253,7 @@ export var Items: {[name: string]: Item} = {
       primordial: 20
     },
     vendor: {
-      buyLocation: "market",
+      buyLocation: {x: 30, y: -40, map: "main"},
       buy: false,
       sell: true,
       keep: 2
@@ -263,7 +263,7 @@ export var Items: {[name: string]: Item} = {
   cclaw: {
     name: "cclaw",
     vendor: {
-      buyLocation: "market",
+      buyLocation: {x: 30, y: -40, map: "main"},
       buy: false,
       sell: true,
       keep: -1
@@ -304,7 +304,7 @@ export var Items: {[name: string]: Item} = {
       allowZero: false
     },
     vendor: {
-      buyLocation: "market",
+      buyLocation: {x: 30, y: -40, map: "main"},
       buy: false,
       sell: true,
       keep: 0
@@ -321,7 +321,7 @@ export var Items: {[name: string]: Item} = {
       allowZero: false
     },
     vendor: {
-      buyLocation: "market",
+      buyLocation: {x: 30, y: -40, map: "main"},
       buy: false,
       sell: true,
       keep: 0
@@ -338,7 +338,7 @@ export var Items: {[name: string]: Item} = {
       allowZero: false
     },
     vendor: {
-      buyLocation: "market",
+      buyLocation: {x: 30, y: -40, map: "main"},
       buy: false,
       sell: true,
       keep: 0
@@ -388,7 +388,7 @@ export var Items: {[name: string]: Item} = {
       allowZero: false
     },
     vendor: {
-      buyLocation: "market",
+      buyLocation: {x: 30, y: -40, map: "main"},
       buy: false,
       sell: true,
       keep: 0
@@ -444,7 +444,7 @@ export var Items: {[name: string]: Item} = {
       sell: true,
       buy: false,
       keep: 9_999,
-      buyLocation: "market"
+      buyLocation: {x: 30, y: -40, map: "main"}
     }
   },
 
@@ -454,7 +454,7 @@ export var Items: {[name: string]: Item} = {
       sell: true,
       buy: false,
       keep: 9_999,
-      buyLocation: "market"
+      buyLocation: {x: 30, y: -40, map: "main"}
     }
   },
 
@@ -464,7 +464,7 @@ export var Items: {[name: string]: Item} = {
       sell: true,
       buy: false,
       keep: 9_999,
-      buyLocation: "market"
+      buyLocation: {x: 30, y: -40, map: "main"}
     }
   },
 
@@ -474,7 +474,7 @@ export var Items: {[name: string]: Item} = {
       sell: true,
       buy: false,
       keep: 9_999,
-      buyLocation: "market"
+      buyLocation: {x: 30, y: -40, map: "main"}
     }
   },
 
